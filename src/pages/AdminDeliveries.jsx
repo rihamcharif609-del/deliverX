@@ -1,81 +1,59 @@
 import { useLanguage } from '../context/LanguageContext';
-import React from 'react';
+import { useDelivery } from '../context/DeliveryContext';
+import React, { useRef, useState } from 'react';
 import MainLayout from '../layouts/MainLayout';
 import DeliveryTable from '../components/DeliveryTable';
-import StatusBadge from '../components/StatusBadge';
-import { useState } from 'react';
-import AdminDeliveryDetail from '../components/adminDeliveryDetail';
+import DeliveryDetailModal from '../components/DeliveryDetailModal';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { useRef } from 'react';
 
-
-
-
-const AdminDeliveries = ({ navigateTo, setUserRole, userRole }) => {
+const AdminDeliveries = ({ setUserRole, userRole }) => {
   const { t } = useLanguage();
+  const { deliveries } = useDelivery();
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDelivery, setSelectedDelivery] = useState(null);
-  const [tableData, setTableData] = useState([]);
-  const tableRef = useRef([]);
+  const tableDataRef = useRef([]);
 
   const filters = ['All', 'Pending', 'In Transit', 'Delivered', 'Cancelled'];
 
   const handleExportPDF = () => {
-  const doc = new jsPDF();
+    const doc = new jsPDF();
 
-  const tableColumn = [
-    "Order ID",
-    "Customer",
-    "Courier",
-    "Date",
-    "Status",
-    "Total"
-  ];
+    const tableColumn = [
+      'Order ID',
+      'Customer',
+      'Courier',
+      'Date',
+      'Status',
+      'Total',
+    ];
 
-  const tableRows = [];
-
-  
-
-  <DeliveryTable 
-  selectedFilter={activeFilter}
-  searchQuery={searchQuery}
-  showActions={true}
-  onDataChange={(data) => {
-    setTableData(data);
-    tableRef.current = data;
-  }}
-/>
-
-
-  tableRef.current.forEach(d => {
-    const row = [
+    const tableRows = tableDataRef.current.map((d) => [
       d.id,
       d.customer,
-      d.Courier,
+      d.Courier || d.courier || 'Unassigned',
       d.date,
       d.status,
-      `$${d.total}`
-    ];
-    tableRows.push(row);
-  });
+      `${(d.total || d.amount || 0).toFixed(2)} MAD`,
+    ]);
 
-  autoTable(doc, {
-    head: [tableColumn],
-    body: tableRows,
-  });
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+    });
 
-  window.open(doc.output('bloburl'));
-
-
-};
+    doc.save('deliveries-report.pdf');
+  };
 
 
 
   return (
-    <MainLayout userRole={userRole} activePage="admin-deliveries" onNavigate={navigateTo} 
-  >
+    <MainLayout
+      userRole={userRole || 'admin'}
+      activePage="admin-deliveries"
+      setUserRole={setUserRole}
+    >
       <div style={{ marginBottom: '30px' }}>
         <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>{t('allDeliveries')}</h1>
         <p style={{ color: 'var(--text-secondary)' }}>{t('allDeliveriesDesc')}</p>
@@ -120,7 +98,14 @@ const AdminDeliveries = ({ navigateTo, setUserRole, userRole }) => {
         </div>
         
       </div>
-      <DeliveryTable selectedFilter={activeFilter} showActions={true} searchQuery={searchQuery} onViewDetails={setSelectedDelivery}/>
+      <DeliveryTable
+        deliveries={deliveries}
+        selectedFilter={activeFilter}
+        showActions={true}
+        searchQuery={searchQuery}
+        onViewDetails={setSelectedDelivery}
+        onDataChange={(data) => { tableDataRef.current = data; }}
+      />
 
       <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <p style={{ color: 'var(--text-secondary)' }}>{t('showingDeliveries')}</p>
@@ -132,10 +117,11 @@ const AdminDeliveries = ({ navigateTo, setUserRole, userRole }) => {
           <button className="btn btn-outline">Next</button>
         </div>
       </div>
-      <AdminDeliveryDetail 
-  delivery={selectedDelivery} 
-  onClose={() => setSelectedDelivery(null)} 
-/>
+      <DeliveryDetailModal
+        delivery={selectedDelivery}
+        onClose={() => setSelectedDelivery(null)}
+        role="admin"
+      />
     </MainLayout>
   );
 };

@@ -4,7 +4,7 @@ import AuthLayout from '../layouts/AuthLayout';
 import { useNavigate } from 'react-router-dom';
 
 
-const Login = ({ setUserRole, setCourierVerified }) => {
+const Login = ({ setUserRole }) => {
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,10 +24,6 @@ const Login = ({ setUserRole, setCourierVerified }) => {
 
   } else if (email.includes('courier')) {
     setUserRole('courier');
-    // Ila kan deja verified f localStorage, n-khlliwh true, sinon false
-    if (setCourierVerified) {
-        setCourierVerified(isAlreadyVerified);
-    }
     navigate('/courier');
 
 
@@ -37,8 +33,6 @@ const Login = ({ setUserRole, setCourierVerified }) => {
     navigate('/sender');
   }
 };
-
-const isAlreadyVerified = localStorage.getItem('isCourierVerified') === 'true';
 
   return (
     <AuthLayout title="Welcome Back" subtitle="Sign in to your account">
@@ -110,10 +104,8 @@ const isAlreadyVerified = localStorage.getItem('isCourierVerified') === 'true';
           <button 
             className="btn btn-outline" 
             style={{ padding: '8px 16px', fontSize: '12px' }}
-            onClick={() => {setUserRole('courier');
-              if (setCourierVerified) {
-                setCourierVerified(false);
-              }
+            onClick={() => {
+              setUserRole('courier');
               navigate('/courier');
             }}
           >

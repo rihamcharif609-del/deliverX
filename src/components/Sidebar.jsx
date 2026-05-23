@@ -7,6 +7,7 @@ const Sidebar = ({ userRole = 'sender', activePage, onNavigate, onProfileClick }
     admin: [
       { label: 'Dashboard', page: '/admin' },
       { label: 'All Deliveries', page: '/admin/deliveries' },
+      { label: 'Courier Verification', page: '/admin/courier-verification' },
       { label: 'Manage Users', page: '/admin/users' },
     ],
     sender: [
@@ -65,6 +66,7 @@ const Sidebar = ({ userRole = 'sender', activePage, onNavigate, onProfileClick }
               {item.label === 'Dashboard' ? t('dashboard') :
                item.label === 'All Deliveries' ? t('allDeliveries') :
                item.label === 'My Deliveries' ? t('myDeliveries') :
+               item.label === 'Courier Verification' ? 'Courier Verification' :
                item.label === 'Manage Users' ? t('manageUsers') :
                item.label === 'Create Delivery' ? t('createDelivery') :
                item.label === 'Track Package' ? t('trackPackage') :

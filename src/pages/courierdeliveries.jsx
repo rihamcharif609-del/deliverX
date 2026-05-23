@@ -4,6 +4,7 @@ import MainLayout from '../layouts/MainLayout';
 import StatusBadge from '../components/StatusBadge';
 import { useEffect } from 'react';
 import CourierDeliveryTable from '../components/CourierDeliveryTable';
+import DeliveryDetailModal from '../components/DeliveryDetailModal';
 
 
 const CourierDeliveries = ({ navigateTo, setUserRole, userRole }) => {
@@ -57,6 +58,12 @@ const [selectedDelivery, setSelectedDelivery] = React.useState(null);
           <button className="btn btn-outline">Next</button>
         </div>
       </div>
+
+      <DeliveryDetailModal
+        delivery={selectedDelivery}
+        onClose={() => setSelectedDelivery(null)}
+        role="courier"
+      />
     </MainLayout>
   );
 };

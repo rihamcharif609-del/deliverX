@@ -21,7 +21,7 @@ import {
   FaSpinner
 } from 'react-icons/fa';
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ setUserRole }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { deliveries, adminAnalytics, refundDelivery } = useDelivery();
@@ -104,7 +104,7 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <MainLayout userRole="admin" activePage="/admin">
+    <MainLayout userRole="admin" activePage="/admin" setUserRole={setUserRole}>
       {/* HEADER SECTION */}
       <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
         <div>

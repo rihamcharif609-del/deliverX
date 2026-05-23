@@ -8,12 +8,14 @@ import { useDelivery } from '../context/DeliveryContext';
 const Header = ({userRole = 'sender', title, navigateTo, darkMode, setDarkMode }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { 
-    notifications, 
-    markAsRead, 
-    markAllAsRead, 
-    deleteNotification: contextDeleteNotification 
+  const {
+    getNotificationsForRole,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification: contextDeleteNotification,
   } = useDelivery();
+
+  const roleNotifications = getNotificationsForRole(userRole);
 
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -74,9 +76,25 @@ const Header = ({userRole = 'sender', title, navigateTo, darkMode, setDarkMode }
   };
 
   const handleNotificationClick = (notif) => {
-    setActiveNotification(notif);
-    markAsRead(notif.id);
+    markAsRead(notif.id, userRole);
     setShowNotifications(false);
+
+    if (notif.type === 'courier_request' && userRole === 'admin') {
+      navigate(notif.path || '/admin/courier-verification');
+      return;
+    }
+
+    if (notif.details) {
+      setActiveNotification(notif);
+      return;
+    }
+
+    if (notif.path) {
+      navigate(notif.path);
+      return;
+    }
+
+    setActiveNotification(notif);
   };
 
   const handleAcceptCourier = (name) => {
@@ -107,22 +125,30 @@ const Header = ({userRole = 'sender', title, navigateTo, darkMode, setDarkMode }
     }
   };
 
-  // Unread badge count
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const unreadCount = roleNotifications.filter((n) => !n.isRead).length;
 
-  // Helper to render notification icons in the list
   const renderListIcon = (type) => {
     switch (type) {
       case 'courier_request':
+      case 'courier_accepted':
+      case 'user_registered':
         return <FaUserPlus />;
       case 'delivery_completed':
+      case 'delivery_created':
+      case 'status_update':
+      case 'delivery_refunded':
         return <FaTruck />;
-      case 'user_registered':
-        return <FaUser />;
+      case 'payment_received':
+      case 'payout_released':
+      case 'courier_notify_paid':
+      case 'courier_notify_refunded':
+        return <FaCheck />;
       default:
         return <FaBell />;
     }
   };
+
+  const roleAvatar = userRole === 'admin' ? 'A' : userRole === 'courier' ? 'C' : 'S';
 
   return (
     <header className="header">
@@ -152,18 +178,18 @@ const Header = ({userRole = 'sender', title, navigateTo, darkMode, setDarkMode }
               <div className="notification-menu-header">
                 <h3>Notifications</h3>
                 {unreadCount > 0 && (
-                  <button className="mark-all-read-btn" onClick={markAllAsRead}>
+                  <button className="mark-all-read-btn" onClick={() => markAllAsRead(userRole)}>
                     Mark all as read
                   </button>
                 )}
               </div>
               <div className="notification-list">
-                {notifications.length === 0 ? (
+                {roleNotifications.length === 0 ? (
                   <p style={{ padding: '20px', color: 'gray', margin: 0, fontSize: '13px', textAlign: 'center' }}>
-                    No new notifications
+                    No notifications for {userRole}
                   </p>
                 ) : (
-                  notifications.map((notif) => (
+                  roleNotifications.map((notif) => (
                     <div
                       key={notif.id}
                       className={`notification-item ${!notif.isRead ? 'unread' : ''}`}
@@ -205,7 +231,7 @@ const Header = ({userRole = 'sender', title, navigateTo, darkMode, setDarkMode }
               setShowNotifications(false);
             }}
           >
-            <div className="user-avatar">JD</div>
+            <div className="user-avatar">{roleAvatar}</div>
             <FaChevronDown />
           </button>
 
@@ -296,7 +322,7 @@ const Header = ({userRole = 'sender', title, navigateTo, darkMode, setDarkMode }
                 </>
               )}
 
-              {activeNotification.type === 'delivery_completed' && (
+              {activeNotification.type === 'delivery_completed' && activeNotification.details && (
                 <>
                   <div className="notification-modal-type-icon delivery_completed">
                     <FaTruck />
@@ -326,7 +352,21 @@ const Header = ({userRole = 'sender', title, navigateTo, darkMode, setDarkMode }
                 </>
               )}
 
-              {activeNotification.type === 'user_registered' && (
+              {!activeNotification.details &&
+                !['courier_request', 'user_registered'].includes(activeNotification.type) && (
+                <>
+                  <div className="notification-modal-type-icon delivery_completed">
+                    {renderListIcon(activeNotification.type)}
+                  </div>
+                  <h4>{activeNotification.text}</h4>
+                  <p className="modal-desc">{activeNotification.description}</p>
+                  <p className="modal-desc" style={{ fontSize: '12px', opacity: 0.7 }}>
+                    {activeNotification.time}
+                  </p>
+                </>
+              )}
+
+              {activeNotification.type === 'user_registered' && activeNotification.details && (
                 <>
                   <div className="notification-modal-type-icon user_registered">
                     <FaUser />
@@ -403,6 +443,42 @@ const Header = ({userRole = 'sender', title, navigateTo, darkMode, setDarkMode }
                     onClick={() => handleViewUser(activeNotification.path)}
                   >
                     View User
+                  </button>
+                </>
+              )}
+
+              {!['courier_request', 'delivery_completed', 'user_registered'].includes(activeNotification.type) && (
+                <>
+                  <button
+                    className="modal-action-btn btn-close"
+                    onClick={() => setActiveNotification(null)}
+                  >
+                    Close
+                  </button>
+                  {activeNotification.path && (
+                    <button
+                      className="modal-action-btn btn-primary"
+                      onClick={() => handleViewDelivery(activeNotification.path)}
+                    >
+                      View Details
+                    </button>
+                  )}
+                </>
+              )}
+
+              {activeNotification.type === 'user_registered' && !activeNotification.details && activeNotification.path && (
+                <>
+                  <button
+                    className="modal-action-btn btn-close"
+                    onClick={() => setActiveNotification(null)}
+                  >
+                    Close
+                  </button>
+                  <button
+                    className="modal-action-btn btn-primary"
+                    onClick={() => handleViewUser(activeNotification.path || '/admin/users')}
+                  >
+                    View Users
                   </button>
                 </>
               )}

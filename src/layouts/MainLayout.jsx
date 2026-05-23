@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaLaptopCode, FaChevronUp, FaChevronDown } from 'react-icons/fa';
 
-const MainLayout = ({children,userRole,activePage,onNavigate,darkMode: _propDarkMode,setDarkMode: _propSetDarkMode,onProfileClick}) => {
+const MainLayout = ({ children, userRole, activePage, onNavigate, setUserRole, darkMode: _propDarkMode, setDarkMode: _propSetDarkMode, onProfileClick }) => {
   const { darkMode, setDarkMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -13,6 +13,9 @@ const MainLayout = ({children,userRole,activePage,onNavigate,darkMode: _propDark
   const [isOpenSwitcher, setIsOpenSwitcher] = useState(false);
 
   const handleRoleSwitch = (targetRole, path) => {
+    if (setUserRole) {
+      setUserRole(targetRole);
+    }
     navigate(path);
   };
 

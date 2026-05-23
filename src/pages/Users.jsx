@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import UserTable from '../components/UserTable';
 import { useLanguage } from '../context/LanguageContext';
 
-const Users = ({ navigateTo }) => {
+const Users = ({ setUserRole }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
@@ -59,8 +59,7 @@ const Users = ({ navigateTo }) => {
   };
 
   return (
-    <MainLayout userRole="admin" activePage="users" onNavigate={navigateTo} 
-  >
+    <MainLayout userRole="admin" activePage="users" setUserRole={setUserRole}>
       <div className="page-container">
         <div className="page-header">
           <div>

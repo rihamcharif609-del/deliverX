@@ -3,7 +3,7 @@ import StatusBadge from './StatusBadge';
 import { useDelivery } from '../context/DeliveryContext';
 import { FaMotorcycle, FaBoxOpen, FaRoute, FaCheckCircle, FaLock, FaKey, FaSpinner, FaTimes } from 'react-icons/fa';
 
-const CourierDeliveryTable = ({ selectedFilter = 'All' }) => {
+const CourierDeliveryTable = ({ selectedFilter = 'All', onViewDetails }) => {
   const { deliveries, updateDeliveryState, confirmDeliveryOTP } = useDelivery();
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpTargetId, setOtpTargetId] = useState(null);
@@ -142,8 +142,18 @@ const CourierDeliveryTable = ({ selectedFilter = 'All' }) => {
                     {courierEarnings.toFixed(2)} MAD
                   </td>
 
-                  {/* ACTION SWITCHER */}
                   <td style={{ padding: '16px', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    {onViewDetails && (
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        style={{ padding: '4px 10px', fontSize: '11px' }}
+                        onClick={() => onViewDetails(d)}
+                      >
+                        View
+                      </button>
+                    )}
                     {d.status === 'accepted' && (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                         <span style={{ fontSize: '11px', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}>
@@ -229,6 +239,7 @@ const CourierDeliveryTable = ({ selectedFilter = 'All' }) => {
                     {d.status === 'cancelled' && (
                       <span style={{ color: 'gray', fontStyle: 'italic', fontSize: '13px' }}>Cancelled</span>
                     )}
+                    </div>
                   </td>
                 </tr>
               );

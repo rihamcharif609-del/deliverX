@@ -99,6 +99,28 @@ const defaultAdminAnalytics = {
   refunds: 450
 };
 
+const NOTIFICATION_ROLE_MAP = {
+  user_registered: 'admin',
+  delivery_created: 'admin',
+  courier_request: 'admin',
+  courier_accepted: 'sender',
+  payment_received: 'sender',
+  status_update: 'sender',
+  delivery_completed: 'sender',
+  delivery_refunded: 'sender',
+  courier_notify_paid: 'courier',
+  payout_released: 'courier',
+  courier_notify_refunded: 'courier',
+};
+
+const resolveNotificationRole = (notif) =>
+  notif.targetRole || NOTIFICATION_ROLE_MAP[notif.type] || 'admin';
+
+const migrateNotification = (notif) => ({
+  ...notif,
+  targetRole: resolveNotificationRole(notif),
+});
+
 export const DeliveryProvider = ({ children }) => {
   const [deliveries, setDeliveries] = useState(() => {
     try {
@@ -148,7 +170,7 @@ export const DeliveryProvider = ({ children }) => {
       const saved = localStorage.getItem('globalNotifications');
       if (saved && saved !== 'undefined') {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return parsed.map(migrateNotification);
       }
     } catch (e) {
       console.error("Error parsing globalNotifications", e);
@@ -157,6 +179,7 @@ export const DeliveryProvider = ({ children }) => {
       {
         id: 1,
         type: 'user_registered',
+        targetRole: 'admin',
         text: 'New user registered',
         description: 'Alex Mercer has registered as a sender.',
         time: '2 hours ago',
@@ -181,22 +204,42 @@ export const DeliveryProvider = ({ children }) => {
     localStorage.setItem('globalNotifications', JSON.stringify(notifications));
   }, [notifications]);
 
+  const PACKAGE_TYPE_LABELS = {
+    documents: 'Documents',
+    parcel: 'Parcel',
+    electronics: 'Electronics',
+    fragile: 'Fragile items',
+    food: 'Food',
+    other: 'Other',
+  };
+
   // 1. Create a delivery request (Sender)
   const createDelivery = (formData) => {
-    const amount = parseFloat(formData.packageWeight || 1) * 15 + 30; // Custom Moroccan formula
+    const weightKg = parseFloat(formData.packageWeight || 1);
+    const priorityMultiplier =
+      formData.priority === 'express' ? 1.5 : formData.priority === 'scheduled' ? 1.1 : 1;
+    const amount = (weightKg * 15 + 30) * priorityMultiplier;
     const commission = amount * 0.15;
     const netAmount = amount - commission;
-    
+    const packageLabel =
+      PACKAGE_TYPE_LABELS[formData.packageType] || PACKAGE_TYPE_LABELS.documents;
+
     const newDelivery = {
       id: 'DEL-' + Math.floor(1000 + Math.random() * 9000),
-      customer: formData.recipientName || 'John Sender',
+      customer: formData.recipientName || formData.pickupContactName || 'John Sender',
       from: formData.pickupAddress,
       to: formData.deliveryAddress,
       pickup: formData.pickupAddress,
       destination: formData.deliveryAddress,
-      type: formData.priority === 'express' ? 'Parcel' : 'Documents',
-      packageType: formData.priority === 'express' ? 'Parcel' : 'Documents',
-      weight: (formData.packageWeight || '0.5') + ' kg',
+      pickupContact: formData.pickupContactName || '',
+      pickupPhone: formData.pickupContactPhone || '',
+      phone: formData.recipientPhone || '',
+      type: packageLabel,
+      packageType: packageLabel,
+      weight: `${weightKg} kg`,
+      dimensions: formData.packageDimensions || '',
+      declaredValue: formData.declaredValue ? parseFloat(formData.declaredValue) : null,
+      priority: formData.priority || 'standard',
       courier: null,
       courierVehicle: null,
       courierRating: null,
@@ -216,9 +259,9 @@ export const DeliveryProvider = ({ children }) => {
 
     setDeliveries(prev => [newDelivery, ...prev]);
 
-    // Send admin notification
     addNotification({
       type: 'delivery_created',
+      targetRole: 'admin',
       text: `New Delivery Request Created`,
       description: `Delivery ${newDelivery.id} from ${newDelivery.pickup.split(',')[0]} is waiting for a courier.`,
       time: 'Just now',
@@ -246,9 +289,9 @@ export const DeliveryProvider = ({ children }) => {
       return d;
     }));
 
-    // Notify Sender
     addNotification({
       type: 'courier_accepted',
+      targetRole: 'sender',
       text: `Courier Accepted Delivery`,
       description: `Courier ${courierName} accepted your delivery ${deliveryId}. Proceed to payment!`,
       time: 'Just now',
@@ -292,11 +335,11 @@ export const DeliveryProvider = ({ children }) => {
       pending: prev.pending + (targetAmount - targetCommission)
     }));
 
-    // Notify Courier and Sender
     addNotification({
       type: 'payment_received',
-      text: `Payment Secured for ${deliveryId}`,
-      description: `Sender paid ${targetAmount} MAD. Money is held. Share OTP ${code} upon delivery.`,
+      targetRole: 'sender',
+      text: `Payment Confirmed`,
+      description: `You paid ${targetAmount} MAD for ${deliveryId}. Your OTP code is ${code} — share it with the courier upon delivery.`,
       time: 'Just now',
       path: `/sender/tracking/${deliveryId}`,
       deliveryId: deliveryId
@@ -304,10 +347,21 @@ export const DeliveryProvider = ({ children }) => {
 
     addNotification({
       type: 'courier_notify_paid',
+      targetRole: 'courier',
       text: `Order ${deliveryId} Paid!`,
       description: `Sender completed online payment. You can now start pickup.`,
       time: 'Just now',
       path: `/courier/deliveries`,
+      deliveryId: deliveryId
+    });
+
+    addNotification({
+      type: 'payment_received',
+      targetRole: 'admin',
+      text: `Payment Held in Escrow`,
+      description: `${targetAmount} MAD secured for ${deliveryId}. Funds locked until OTP confirmation.`,
+      time: 'Just now',
+      path: '/admin',
       deliveryId: deliveryId
     });
   };
@@ -331,6 +385,7 @@ export const DeliveryProvider = ({ children }) => {
 
     addNotification({
       type: 'status_update',
+      targetRole: 'sender',
       text: `Delivery status: ${nextStatus.toUpperCase()}`,
       description: `Delivery ${deliveryId} is now ${nextStatus.replace('-', ' ')}.`,
       time: 'Just now',
@@ -383,9 +438,9 @@ export const DeliveryProvider = ({ children }) => {
         total: prev.total + courierEarn
       }));
 
-      // Add notification for Sender
       addNotification({
         type: 'delivery_completed',
+        targetRole: 'sender',
         text: `Delivery Completed!`,
         description: `Order ${deliveryId} delivered. Funds released. Thank you!`,
         time: 'Just now',
@@ -393,13 +448,23 @@ export const DeliveryProvider = ({ children }) => {
         deliveryId: deliveryId
       });
 
-      // Add notification for Courier
       addNotification({
         type: 'payout_released',
+        targetRole: 'courier',
         text: `Earnings Released!`,
         description: `OTP match. +${courierEarn} MAD credited to your balance.`,
         time: 'Just now',
         path: `/courier`,
+        deliveryId: deliveryId
+      });
+
+      addNotification({
+        type: 'delivery_completed',
+        targetRole: 'admin',
+        text: `Delivery Settled`,
+        description: `Order ${deliveryId} completed. ${targetAmount} MAD released from escrow.`,
+        time: 'Just now',
+        path: '/admin',
         deliveryId: deliveryId
       });
 
@@ -466,11 +531,11 @@ export const DeliveryProvider = ({ children }) => {
         pending: Math.max(0, prev.pending - courierEarn)
       }));
 
-      // Notifications
       addNotification({
         type: 'delivery_refunded',
+        targetRole: 'sender',
         text: `Refund Processed for ${deliveryId}`,
-        description: `Admin approved refund of ${targetAmount} MAD to Sender.`,
+        description: `Admin approved refund of ${targetAmount} MAD to your account.`,
         time: 'Just now',
         path: `/sender/deliveries`,
         deliveryId: deliveryId
@@ -478,6 +543,7 @@ export const DeliveryProvider = ({ children }) => {
 
       addNotification({
         type: 'courier_notify_refunded',
+        targetRole: 'courier',
         text: `Order ${deliveryId} Cancelled & Refunded`,
         description: `Admin processed a dispute refund. Escrow earnings reverted.`,
         time: 'Just now',
@@ -490,23 +556,30 @@ export const DeliveryProvider = ({ children }) => {
     return { success: false, message: 'Only payments held in escrow can be refunded.' };
   };
 
-  // Add Notification utility
   const addNotification = (notif) => {
-    const newNotif = {
-      id: Date.now(),
+    const newNotif = migrateNotification({
+      id: Date.now() + Math.random(),
       isRead: false,
-      ...notif
-    };
+      ...notif,
+    });
     setNotifications(prev => [newNotif, ...prev]);
   };
 
-  // Clear or read notifications
-  const markAsRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+  const getNotificationsForRole = (role) =>
+    notifications.filter((n) => n.targetRole === role);
+
+  const markAsRead = (id, role) => {
+    setNotifications(prev =>
+      prev.map((n) =>
+        n.id === id && (!role || n.targetRole === role) ? { ...n, isRead: true } : n
+      )
+    );
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  const markAllAsRead = (role) => {
+    setNotifications(prev =>
+      prev.map((n) => (n.targetRole === role ? { ...n, isRead: true } : n))
+    );
   };
 
   const deleteNotification = (id) => {
@@ -519,6 +592,7 @@ export const DeliveryProvider = ({ children }) => {
       courierEarnings,
       adminAnalytics,
       notifications,
+      getNotificationsForRole,
       createDelivery,
       acceptDelivery,
       payDelivery,

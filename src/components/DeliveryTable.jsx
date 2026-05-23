@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import StatusBadge from './StatusBadge';
-import { useEffect } from 'react';
 
 const DeliveryTable = ({ deliveries = [], showActions = false, selectedFilter = 'All', searchQuery = '', onViewDetails, onDataChange }) => {
   const defaultDeliveries = [
@@ -80,18 +79,21 @@ const DeliveryTable = ({ deliveries = [], showActions = false, selectedFilter = 
 
   const filterKey = selectedFilter.toLowerCase().replace(' ', '-');
 
-  const filteredData = data.filter((item) => {
-    const matchesStatus = filterKey === 'all' || item.status === filterKey;
-const matchesSearch = item.customer.toLowerCase().includes((searchQuery || '').toLowerCase());
-
-    return matchesStatus && matchesSearch;
-  });
+  const filteredData = useMemo(() => {
+    return data.filter((item) => {
+      const matchesStatus = filterKey === 'all' || item.status === filterKey;
+      const matchesSearch = (item.customer || '')
+        .toLowerCase()
+        .includes((searchQuery || '').toLowerCase());
+      return matchesStatus && matchesSearch;
+    });
+  }, [data, filterKey, searchQuery]);
 
   useEffect(() => {
-  if (onDataChange) {
-    onDataChange(filteredData);
-  }
-}, [filteredData, onDataChange]);
+    if (onDataChange) {
+      onDataChange(filteredData);
+    }
+  }, [filteredData, onDataChange]);
 
   return (
     <div className="table-container">
