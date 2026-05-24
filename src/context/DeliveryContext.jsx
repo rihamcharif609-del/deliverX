@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { calculatePrice } from '../utils/calculatePrice';
 
 const DeliveryContext = createContext();
 
@@ -216,9 +217,19 @@ export const DeliveryProvider = ({ children }) => {
   // 1. Create a delivery request (Sender)
   const createDelivery = (formData) => {
     const weightKg = parseFloat(formData.packageWeight || 1);
-    const priorityMultiplier =
-      formData.priority === 'express' ? 1.5 : formData.priority === 'scheduled' ? 1.1 : 1;
-    const amount = (weightKg * 15 + 30) * priorityMultiplier;
+    const priceQuote =
+      formData.calculatedAmount != null
+        ? {
+            total: formData.calculatedAmount,
+            distanceKm: formData.distanceKm ?? 0,
+          }
+        : calculatePrice({
+            pickupAddress: formData.pickupAddress,
+            deliveryAddress: formData.deliveryAddress,
+            packageWeight: formData.packageWeight,
+            priority: formData.priority,
+          });
+    const amount = priceQuote.total;
     const commission = amount * 0.15;
     const netAmount = amount - commission;
     const packageLabel =
@@ -240,6 +251,7 @@ export const DeliveryProvider = ({ children }) => {
       dimensions: formData.packageDimensions || '',
       declaredValue: formData.declaredValue ? parseFloat(formData.declaredValue) : null,
       priority: formData.priority || 'standard',
+      distanceKm: priceQuote.distanceKm,
       courier: null,
       courierVehicle: null,
       courierRating: null,

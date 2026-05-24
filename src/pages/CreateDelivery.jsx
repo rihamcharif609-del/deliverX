@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import MainLayout from '../layouts/MainLayout';
 import { useNavigate } from 'react-router-dom';
 import { useDelivery } from '../context/DeliveryContext';
+import { calculatePrice } from '../utils/calculatePrice';
 
 const initialFormData = {
   pickupAddress: '',
@@ -67,10 +68,30 @@ const CreateDelivery = () => {
     return Object.keys(next).length === 0;
   };
 
+  const priceQuote = useMemo(
+    () =>
+      calculatePrice({
+        pickupAddress: formData.pickupAddress,
+        deliveryAddress: formData.deliveryAddress,
+        packageWeight: formData.packageWeight,
+        priority: formData.priority,
+      }),
+    [
+      formData.pickupAddress,
+      formData.deliveryAddress,
+      formData.packageWeight,
+      formData.priority,
+    ]
+  );
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!validate()) return;
-    createDelivery(formData);
+    createDelivery({
+      ...formData,
+      calculatedAmount: priceQuote.total,
+      distanceKm: priceQuote.distanceKm,
+    });
     navigate('/sender/deliveries');
   };
 
@@ -311,6 +332,42 @@ const CreateDelivery = () => {
               </select>
             </div>
           </div>
+        </div>
+
+        <div className="delivery-price-estimate card" style={{ marginTop: '30px' }}>
+          <h3 style={{ marginBottom: '8px' }}>Delivery Price Estimate</h3>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '16px' }}>
+            Price is calculated automatically. You cannot edit the fee manually.
+          </p>
+
+          <div className="delivery-price-total">
+            <span>Estimated Delivery Fee:</span>
+            <strong>{priceQuote.total.toFixed(2)} MAD</strong>
+          </div>
+
+          {formData.pickupAddress.trim() && formData.deliveryAddress.trim() ? (
+            <p className="delivery-price-distance">
+              Estimated distance: <strong>{priceQuote.distanceKm} km</strong> (simulated)
+            </p>
+          ) : (
+            <p className="delivery-price-distance">
+              Enter pickup and delivery addresses to include distance in the estimate.
+            </p>
+          )}
+
+          <ul className="delivery-price-breakdown">
+            <li>Base fee: {priceQuote.breakdown.base.toFixed(2)} MAD</li>
+            <li>
+              Distance ({priceQuote.distanceKm} km × 2 MAD):{' '}
+              {priceQuote.breakdown.distance.toFixed(2)} MAD
+            </li>
+            {priceQuote.breakdown.weight > 0 && (
+              <li>Weight surcharge: {priceQuote.breakdown.weight.toFixed(2)} MAD</li>
+            )}
+            {priceQuote.breakdown.express > 0 && (
+              <li>Express delivery: {priceQuote.breakdown.express.toFixed(2)} MAD</li>
+            )}
+          </ul>
         </div>
 
         <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'flex-end', gap: '15px' }}>
