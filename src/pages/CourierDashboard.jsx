@@ -22,7 +22,9 @@ import {
 const CourierDashboard = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { deliveries, courierEarnings, acceptDelivery, requestWithdrawal } = useDelivery();
+  const { deliveries, courierEarnings, acceptDelivery, requestWithdrawal, couriers } = useDelivery();
+
+  const myCourierInfo = (couriers || []).find(c => c.name === 'Mike Smith') || { rating: 4.8, ratingsCount: 0, completedCount: 0 };
 
   // State for Withdrawal Modal
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -60,7 +62,7 @@ const CourierDashboard = () => {
     { title: 'Completed Today', value: completedTodayCount.toString(), change: '+2', icon: '✅', trend: 'positive' },
     { title: 'Today\'s Earnings', value: `${earningsToday.toFixed(0)} MAD`, change: earningsToday > 0 ? `+${earningsToday} MAD` : '0 MAD', icon: '💸', trend: 'positive' },
     { title: 'Active Deliveries', value: activeDeliveries.length.toString(), change: activeDeliveries.length > 0 ? 'Active' : 'Idle', icon: '🚚', trend: activeDeliveries.length > 0 ? 'positive' : 'negative' },
-    { title: 'Courier Rating', value: '4.8', change: '+0.1', icon: '⭐', trend: 'positive' },
+    { title: 'Courier Rating', value: String(myCourierInfo.rating.toFixed(1)), change: `${myCourierInfo.ratingsCount} reviews`, icon: '⭐', trend: 'positive' },
   ];
 
   const handleAcceptNearby = (id) => {
@@ -347,6 +349,46 @@ const CourierDashboard = () => {
           >
             View All Available Requests
           </button>
+        </div>
+      </div>
+
+      {/* RECENT REVIEWS SECTION */}
+      <div className="card" style={{ padding: '24px', borderRadius: '16px', marginBottom: '30px' }}>
+        <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px', marginBottom: '20px' }}>Recent Reviews & Feedback</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+          {myDeliveries.filter(d => d.ratingGiven).length > 0 ? (
+            myDeliveries.filter(d => d.ratingGiven).slice(0, 3).map(d => (
+              <div key={d.id} style={{
+                padding: '16px',
+                borderRadius: '12px',
+                border: '1px solid var(--border-color)',
+                background: 'var(--hover-bg)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)' }}>{d.id}</span>
+                  <span style={{ color: '#facc15', fontSize: '12px' }}>
+                    {'★'.repeat(d.ratingGiven)}{'☆'.repeat(5 - d.ratingGiven)}
+                  </span>
+                </div>
+                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                  Customer: <strong>{d.customer}</strong> • {d.date}
+                </p>
+                {d.ratingComment ? (
+                  <p style={{ fontSize: '12px', fontStyle: 'italic', color: 'var(--text-primary)', margin: 0 }}>
+                    "{d.ratingComment}"
+                  </p>
+                ) : (
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>
+                    No comment left.
+                  </p>
+                )}
+              </div>
+            ))
+          ) : (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '20px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+              No reviews or ratings received yet.
+            </div>
+          )}
         </div>
       </div>
 

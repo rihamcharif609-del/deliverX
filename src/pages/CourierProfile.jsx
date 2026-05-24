@@ -14,7 +14,7 @@ const DOC_CONFIG = [
 const CourierProfile = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { addNotification } = useDelivery();
+  const { addNotification, couriers, deliveries } = useDelivery();
   const {
     profile,
     documents,
@@ -25,6 +25,10 @@ const CourierProfile = () => {
     uploadDocument,
     submitForVerification,
   } = useCourierVerification();
+
+  const myCourierInfo = (couriers || []).find(c => c.name === profile.name) || (couriers || []).find(c => c.name === 'Mike Smith') || { rating: 4.8, completedCount: 0 };
+  const currentRating = myCourierInfo.rating;
+  const completedCount = myCourierInfo.completedCount || (deliveries || []).filter(d => (d.courier === profile.name || d.courier === 'Mike Smith') && d.status === 'delivered').length;
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ ...profile });
@@ -154,11 +158,11 @@ const CourierProfile = () => {
             <div className="profile-stat-label">Total Earnings</div>
           </div>
           <div className="profile-stat-card">
-            <div className="profile-stat-value">{profile.rating} ⭐</div>
+            <div className="profile-stat-value">{currentRating.toFixed(1)} ⭐</div>
             <div className="profile-stat-label">Rating</div>
           </div>
           <div className="profile-stat-card">
-            <div className="profile-stat-value">{profile.completedDeliveries}</div>
+            <div className="profile-stat-value">{completedCount}</div>
             <div className="profile-stat-label">Completed Deliveries</div>
           </div>
         </div>
@@ -362,6 +366,49 @@ const CourierProfile = () => {
             </button>
           )}
         </div>
+
+        {/* CUSTOMER REVIEWS SECTION */}
+        <div className="profile-section" style={{ marginTop: '30px' }}>
+          <div className="profile-section-title">
+            <span>Customer Reviews & Feedback</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+            {deliveries.filter(d => (d.courier === profile.name || d.courier === 'Mike Smith') && d.ratingGiven).length > 0 ? (
+              deliveries.filter(d => (d.courier === profile.name || d.courier === 'Mike Smith') && d.ratingGiven).map(d => (
+                <div key={d.id} style={{
+                  padding: '16px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--hover-bg)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)' }}>{d.id}</span>
+                    <span style={{ color: '#facc15', fontSize: '12px' }}>
+                      {'★'.repeat(d.ratingGiven)}{'☆'.repeat(5 - d.ratingGiven)}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                    Rated by: <strong>{d.customer}</strong> • {d.date}
+                  </p>
+                  {d.ratingComment ? (
+                    <p style={{ fontSize: '12px', fontStyle: 'italic', color: 'var(--text-primary)', margin: 0 }}>
+                      "{d.ratingComment}"
+                    </p>
+                  ) : (
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>
+                      No comment left.
+                    </p>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', fontStyle: 'italic' }}>
+                No customer reviews received yet.
+              </p>
+            )}
+          </div>
+        </div>
+
       </div>
     </MainLayout>
   );

@@ -88,7 +88,7 @@ const UserProfile = () => {
     approveVerification,
     rejectVerification,
   } = useCourierVerification();
-  const { deliveries, courierEarnings, addNotification } = useDelivery();
+  const { deliveries, courierEarnings, addNotification, couriers } = useDelivery();
 
   const [rejectReason, setRejectReason] = useState('');
   const [previewDoc, setPreviewDoc] = useState(null);
@@ -101,13 +101,14 @@ const UserProfile = () => {
       (d) => d.courier === profile.name || d.courier === 'Mike Smith'
     );
     const completed = assigned.filter((d) => d.status === 'delivered').length;
+    const myCourierInfo = (couriers || []).find(c => c.name === profile.name) || (couriers || []).find(c => c.name === 'Mike Smith') || { rating: 4.8, completedCount: 0 };
     return {
       assigned: assigned.length,
-      completed,
+      completed: myCourierInfo.completedCount || completed,
       earnings: courierEarnings?.total ?? profile.earnings ?? 0,
-      rating: profile.rating ?? 4.8,
+      rating: myCourierInfo.rating,
     };
-  }, [deliveries, profile, courierEarnings]);
+  }, [deliveries, profile, courierEarnings, couriers]);
 
   const notifyCourier = (type, text, description) => {
     addNotification({
@@ -356,6 +357,49 @@ const UserProfile = () => {
             >
               Open verification page
             </button>
+          </div>
+        </div>
+
+        {/* CUSTOMER REVIEWS SECTION FOR ADMIN */}
+        <div className="profile-section" style={{ marginTop: '30px', maxWidth: '1000px', marginLeft: 'auto', marginRight: 'auto' }}>
+          <div className="profile-section-title">
+            <span>Customer Reviews & Feedback</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+            {deliveries.filter(d => (d.courier === profile.name || d.courier === 'Mike Smith') && d.ratingGiven).length > 0 ? (
+              deliveries.filter(d => (d.courier === profile.name || d.courier === 'Mike Smith') && d.ratingGiven).map(d => (
+                <div key={d.id} style={{
+                  padding: '16px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--hover-bg)',
+                  textAlign: 'left'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)' }}>{d.id}</span>
+                    <span style={{ color: '#facc15', fontSize: '12px' }}>
+                      {'★'.repeat(d.ratingGiven)}{'☆'.repeat(5 - d.ratingGiven)}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                    Rated by: <strong>{d.customer}</strong> • {d.date}
+                  </p>
+                  {d.ratingComment ? (
+                    <p style={{ fontSize: '12px', fontStyle: 'italic', color: 'var(--text-primary)', margin: 0 }}>
+                      "{d.ratingComment}"
+                    </p>
+                  ) : (
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>
+                      No comment left.
+                    </p>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', fontStyle: 'italic' }}>
+                No customer reviews received yet.
+              </p>
+            )}
           </div>
         </div>
 

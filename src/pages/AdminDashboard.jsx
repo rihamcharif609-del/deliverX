@@ -24,7 +24,7 @@ import {
 const AdminDashboard = ({ setUserRole }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { deliveries, adminAnalytics, refundDelivery } = useDelivery();
+  const { deliveries, adminAnalytics, refundDelivery, couriers } = useDelivery();
 
   // Search & Filter state for the Payment Monitor Table
   const [searchTerm, setSearchTerm] = useState('');
@@ -102,6 +102,21 @@ const AdminDashboard = ({ setUserRole }) => {
     { id: 7, name: 'James Taylor', email: 'james.t@example.com', role: 'courier', status: 'active', joined: '2026-01-05', deliveries: 92 },
     { id: 8, name: 'Maria Garcia', email: 'maria.g@example.com', role: 'sender', status: 'inactive', joined: '2026-04-12', deliveries: 8 },
   ];
+
+  // Sort couriers by rating descending, and take the top 3
+  const topCouriers = [...(couriers || [])]
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .slice(0, 3);
+
+  const getRecentComment = (courierName) => {
+    const courierDeliveries = (deliveries || []).filter(
+      d => d.courier === courierName && d.ratingComment
+    );
+    if (courierDeliveries.length > 0) {
+      return courierDeliveries[0].ratingComment;
+    }
+    return null;
+  };
 
   return (
     <MainLayout userRole="admin" activePage="/admin" setUserRole={setUserRole}>
@@ -344,7 +359,7 @@ const AdminDashboard = ({ setUserRole }) => {
       </div>
 
       {/* OPERATIONS TABLES SECTION */}
-      <div className="grid grid-2" style={{ gap: '25px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.1fr 1.2fr', gap: '25px', marginBottom: '30px' }}>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Active Deliveries Status</h3>
@@ -359,6 +374,96 @@ const AdminDashboard = ({ setUserRole }) => {
             <button className="btn btn-outline" onClick={() => navigate('/admin/users')}>View All</button>
           </div>
           <UserTable users={recentUsers} showActions={false}/>
+        </div>
+
+        {/* TOP RATED COURIERS */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Top Rated Couriers</h3>
+          </div>
+          <div className="card" style={{ padding: '20px', borderRadius: '16px', height: 'calc(100% - 40px)', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {topCouriers.map((courier, index) => {
+                const recentComment = getRecentComment(courier.name);
+                return (
+                  <div key={courier.name} style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '12px',
+                    borderRadius: '12px',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--hover-bg)',
+                    position: 'relative'
+                  }}>
+                    {/* Rank Badge */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '10px',
+                      right: '10px',
+                      width: '22px',
+                      height: '22px',
+                      borderRadius: '50%',
+                      background: index === 0 ? '#facc15' : index === 1 ? '#cbd5e1' : '#b45309',
+                      color: index === 0 ? '#000' : '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '11px',
+                      fontWeight: '800'
+                    }}>
+                      #{index + 1}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: '#2563eb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: '14px'
+                      }}>
+                        {courier.avatar || courier.name.split(' ').map(n => n[0]).join('')}
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                          {courier.name}
+                        </h4>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          {courier.vehicle} • {courier.completedCount || 0} deliveries
+                        </p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '10px' }}>
+                      <span style={{ color: '#facc15', fontSize: '14px' }}>★</span>
+                      <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{courier.rating.toFixed(1)}</strong>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>({courier.ratingsCount || 0} reviews)</span>
+                    </div>
+
+                    {recentComment && (
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '8px 10px',
+                        background: 'var(--card-background)',
+                        borderRadius: '6px',
+                        borderLeft: '3px solid #2563eb',
+                        fontSize: '11px',
+                        fontStyle: 'italic',
+                        color: 'var(--text-secondary)'
+                      }}>
+                        "{recentComment}"
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 

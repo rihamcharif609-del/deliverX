@@ -12,11 +12,23 @@ import { FaCreditCard, FaLock, FaKey, FaBox, FaArrowLeft, FaMapMarkerAlt, FaCale
 const Tracking = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { deliveries } = useDelivery();
+  const { deliveries, rateCourier } = useDelivery();
   const [showChat, setShowChat] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const { darkMode } = useTheme();
   const { t } = useLanguage();
+
+  const [ratingInput, setRatingInput] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [commentInput, setCommentInput] = useState('');
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
+
+  React.useEffect(() => {
+    setRatingInput(0);
+    setHoverRating(0);
+    setCommentInput('');
+    setRatingSubmitted(false);
+  }, [id]);
 
   // Find delivery in state
   const delivery = deliveries.find(d => d.id === id) || deliveries[0];
@@ -544,6 +556,113 @@ const Tracking = () => {
               </div>
             )}
           </div>
+
+          {/* COURIER RATING CARD */}
+          {delivery.status === 'delivered' && delivery.courier && (
+            <div className="card" style={{ marginBottom: '20px', borderRadius: '20px', padding: '24px' }}>
+              <h3 style={{ marginBottom: '12px' }}>
+                Rate Your Courier
+              </h3>
+              
+              {delivery.ratingGiven || ratingSubmitted ? (
+                <div style={{ textAlign: 'center', padding: '10px 0' }}>
+                  <div style={{ fontSize: '32px', color: '#facc15', marginBottom: '10px' }}>
+                    {'★'.repeat(delivery.ratingGiven || ratingInput)}
+                    {'☆'.repeat(5 - (delivery.ratingGiven || ratingInput))}
+                  </div>
+                  <p style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                    Thank you! You rated {delivery.courier} {(delivery.ratingGiven || ratingInput)} stars.
+                  </p>
+                  {(delivery.ratingComment || commentInput) && (
+                    <div style={{
+                      marginTop: '12px',
+                      padding: '10px 14px',
+                      background: 'var(--hover-bg)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontStyle: 'italic',
+                      color: 'var(--text-secondary)'
+                    }}>
+                      "{delivery.ratingComment || commentInput}"
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                    How was your delivery experience with {delivery.courier}?
+                  </p>
+                  
+                  {/* Star Rating Select */}
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '20px' }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        onClick={() => setRatingInput(star)}
+                        onMouseEnter={() => setHoverRating(star)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        style={{
+                          fontSize: '32px',
+                          cursor: 'pointer',
+                          color: star <= (hoverRating || ratingInput) ? '#facc15' : '#e5e7eb',
+                          transition: 'color 0.15s ease'
+                        }}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
+                  
+                  {/* Comment Input */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                      Leave a comment (optional)
+                    </label>
+                    <textarea
+                      placeholder="Share details of your experience..."
+                      value={commentInput}
+                      onChange={(e) => setCommentInput(e.target.value)}
+                      rows="3"
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--card-background)',
+                        color: 'var(--text-primary)',
+                        fontSize: '13px',
+                        resize: 'vertical',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+                  
+                  <button
+                    className="btn btn-primary"
+                    disabled={ratingInput === 0}
+                    onClick={() => {
+                      rateCourier(delivery.id, ratingInput, commentInput);
+                      setRatingSubmitted(true);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 0',
+                      borderRadius: '10px',
+                      backgroundColor: ratingInput === 0 ? 'var(--border-color)' : '#2563eb',
+                      borderColor: ratingInput === 0 ? 'var(--border-color)' : '#2563eb',
+                      fontWeight: '600',
+                      cursor: ratingInput === 0 ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Submit Rating
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* QUICK ACTIONS */}
           <div className="card" style={{ marginBottom: '20px', borderRadius: '20px' }}>

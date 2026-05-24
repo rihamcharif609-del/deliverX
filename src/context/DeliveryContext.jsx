@@ -91,6 +91,14 @@ const defaultCourierEarnings = {
   ]
 };
 
+const defaultCouriers = [
+  { name: 'Yassine Mansouri', vehicle: 'Scooter', rating: 4.9, ratingsCount: 15, completedCount: 124, avatar: 'YM' },
+  { name: 'Emma Brown', vehicle: 'E-Bike', rating: 4.8, ratingsCount: 12, completedCount: 89, avatar: 'EB' },
+  { name: 'Mike Smith', vehicle: 'Motorcycle', rating: 4.7, ratingsCount: 8, completedCount: 56, avatar: 'MS' },
+  { name: 'David Wilson', vehicle: 'Car', rating: 4.6, ratingsCount: 10, completedCount: 67, avatar: 'DW' },
+  { name: 'James Taylor', vehicle: 'Motorcycle', rating: 4.5, ratingsCount: 7, completedCount: 92, avatar: 'JT' }
+];
+
 const defaultAdminAnalytics = {
   totalRevenue: 85240,
   platformProfit: 12786,
@@ -134,6 +142,19 @@ export const DeliveryProvider = ({ children }) => {
       console.error("Error parsing myDeliveries", e);
     }
     return defaultDeliveries;
+  });
+
+  const [couriers, setCouriers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('myCouriers');
+      if (saved && saved !== 'undefined') {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error("Error parsing myCouriers", e);
+    }
+    return defaultCouriers;
   });
 
   const [courierEarnings, setCourierEarnings] = useState(() => {
@@ -204,6 +225,10 @@ export const DeliveryProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('globalNotifications', JSON.stringify(notifications));
   }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem('myCouriers', JSON.stringify(couriers));
+  }, [couriers]);
 
   const PACKAGE_TYPE_LABELS = {
     documents: 'Documents',
@@ -594,6 +619,56 @@ export const DeliveryProvider = ({ children }) => {
     );
   };
 
+  const rateCourier = (deliveryId, ratingValue, comment) => {
+    let courierName = '';
+
+    setDeliveries(prev => prev.map(d => {
+      if (d.id === deliveryId) {
+        courierName = d.courier;
+        return {
+          ...d,
+          courierRating: String(ratingValue),
+          ratingGiven: ratingValue,
+          ratingComment: comment || ''
+        };
+      }
+      return d;
+    }));
+
+    if (courierName) {
+      setCouriers(prev => {
+        const exists = prev.some(c => c.name === courierName);
+        if (exists) {
+          return prev.map(c => {
+            if (c.name === courierName) {
+              const newCount = (c.ratingsCount || 0) + 1;
+              const newRating = parseFloat((((c.rating || 0) * (c.ratingsCount || 0)) + ratingValue) / newCount).toFixed(1);
+              return {
+                ...c,
+                rating: parseFloat(newRating),
+                ratingsCount: newCount,
+                completedCount: (c.completedCount || 0) + 1
+              };
+            }
+            return c;
+          });
+        } else {
+          return [
+            ...prev,
+            {
+              name: courierName,
+              vehicle: 'Motorcycle',
+              rating: ratingValue,
+              ratingsCount: 1,
+              completedCount: 1,
+              avatar: courierName.split(' ').map(n => n[0]).join('')
+            }
+          ];
+        }
+      });
+    }
+  };
+
   const deleteNotification = (id) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
@@ -615,7 +690,9 @@ export const DeliveryProvider = ({ children }) => {
       addNotification,
       markAsRead,
       markAllAsRead,
-      deleteNotification
+      deleteNotification,
+      couriers,
+      rateCourier
     }}>
       {children}
     </DeliveryContext.Provider>
