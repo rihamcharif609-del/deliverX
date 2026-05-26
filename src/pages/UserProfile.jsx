@@ -157,7 +157,13 @@ const UserProfile = () => {
           </div>
 
           <div className="profile-header">
-            <div className="profile-avatar-large">{profile.avatar || 'MC'}</div>
+            <div className="profile-avatar-large">
+              {profile.photo ? (
+                <img src={profile.photo} alt="Courier" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+              ) : (
+                profile.avatar || 'MC'
+              )}
+            </div>
             <h1 className="profile-name">{profile.name}</h1>
             <div className="profile-role">Courier</div>
             <div className={`verification-badge ${verificationStatus}`}>

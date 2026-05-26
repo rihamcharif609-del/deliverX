@@ -12,6 +12,7 @@ const defaultProfile = {
   cinNumber: 'CIN-987654321',
   driverLicense: 'DL-12345678',
   avatar: 'MC',
+  photo: null,
   completedDeliveries: 0,
   rating: 0,
   earnings: 0,

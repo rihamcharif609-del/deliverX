@@ -35,10 +35,33 @@ const CourierProfile = () => {
   const [uploadError, setUploadError] = useState('');
   const [submitMessage, setSubmitMessage] = useState('');
   const fileInputRefs = useRef({});
+  const photoInputRef = useRef(null);
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateProfile({ photo: reader.result });
+      addNotification({
+        type: 'status_update',
+        targetRole: 'courier',
+        text: 'Profile Photo Updated',
+        description: 'Your profile photo was successfully updated.',
+        time: 'Just now',
+        path: '/courier/profile'
+      });
+    };
+    reader.readAsDataURL(file);
+  };
 
   const calculateCompletion = () => {
     let completed = 0;
-    const total = 7;
+    const total = 8;
     if (profile.phone) completed++;
     if (profile.address) completed++;
     if (profile.vehicleType) completed++;
@@ -46,6 +69,7 @@ const CourierProfile = () => {
     if (profile.cinNumber) completed++;
     if (profile.driverLicense) completed++;
     if (allDocumentsUploaded()) completed++;
+    if (profile.photo) completed++;
     return Math.round((completed / total) * 100);
   };
 
@@ -117,7 +141,52 @@ const CourierProfile = () => {
     <MainLayout userRole="courier" activePage="courier-profile">
       <div className="profile-container">
         <div className="profile-header">
-          <div className="profile-avatar-large">{profile.avatar}</div>
+          <input
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            ref={photoInputRef}
+            onChange={handlePhotoUpload}
+          />
+          <div 
+            className="profile-avatar-large" 
+            onClick={() => photoInputRef.current?.click()}
+            style={{ 
+              cursor: 'pointer', 
+              position: 'relative', 
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Click to upload profile photo"
+          >
+            {profile.photo ? (
+              <img 
+                src={profile.photo} 
+                alt="Courier Profile" 
+                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
+              />
+            ) : (
+              profile.avatar
+            )}
+            
+            {/* Edit overlay */}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: '100%',
+              background: 'rgba(0, 0, 0, 0.6)',
+              color: '#fff',
+              fontSize: '10px',
+              padding: '4px 0',
+              textAlign: 'center',
+              fontWeight: '600'
+            }}>
+              EDIT
+            </div>
+          </div>
           <h1 className="profile-name">{isEditing ? formData.name : profile.name}</h1>
           <div className="profile-role">Courier</div>
           <div className={`verification-badge ${verificationStatus}`}>

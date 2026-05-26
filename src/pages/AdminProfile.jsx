@@ -5,16 +5,42 @@ import MainLayout from '../layouts/MainLayout';
 const AdminProfile = ({ navigateTo, onProfileClick }) => {
   const { t } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
-    name: 'John Admin',
-    email: 'admin@deliverx.com',
-    phone: '+1 (555) 123-4567',
-    role: 'Administrator',
-    joinedDate: 'January 15, 2024',
-    avatar: 'A'
+  const [profileData, setProfileData] = useState(() => {
+    try {
+      const saved = localStorage.getItem('adminProfile');
+      if (saved && saved !== 'undefined') return JSON.parse(saved);
+    } catch (e) {
+      console.error("Error loading adminProfile", e);
+    }
+    return {
+      name: 'John Admin',
+      email: 'admin@deliverx.com',
+      phone: '+1 (555) 123-4567',
+      role: 'Administrator',
+      joinedDate: 'January 15, 2024',
+      avatar: 'A',
+      photo: null
+    };
   });
 
   const [formData, setFormData] = useState({ ...profileData });
+  const fileInputRef = React.useRef(null);
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const updated = { ...profileData, photo: reader.result };
+      setProfileData(updated);
+      localStorage.setItem('adminProfile', JSON.stringify(updated));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const stats = {
     totalUsers: 1234,
@@ -29,7 +55,9 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
   };
 
   const handleSave = () => {
-    setProfileData({ ...formData });
+    const updated = { ...formData };
+    setProfileData(updated);
+    localStorage.setItem('adminProfile', JSON.stringify(updated));
     setIsEditing(false);
   };
 
@@ -46,12 +74,48 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
   };
 
   return (
-    <MainLayout userRole="admin" activePage="admin-profile" onNavigate={navigateTo} onProfileClick={onProfileClick} 
-  >
+    <MainLayout userRole="admin" activePage="admin-profile" onNavigate={navigateTo} onProfileClick={onProfileClick}>
       <div className="profile-container">
         <div className="profile-header">
-          <div className="profile-avatar-large">
-            {profileData.avatar}
+          <input
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            ref={fileInputRef}
+            onChange={handlePhotoUpload}
+          />
+          <div 
+            className="profile-avatar-large" 
+            onClick={() => fileInputRef.current?.click()}
+            style={{ 
+              cursor: 'pointer', 
+              position: 'relative', 
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Click to upload profile photo"
+          >
+            {profileData.photo ? (
+              <img src={profileData.photo} alt="Admin Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+            ) : (
+              profileData.avatar
+            )}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              width: '100%',
+              background: 'rgba(0, 0, 0, 0.6)',
+              color: '#fff',
+              fontSize: '10px',
+              padding: '4px 0',
+              textAlign: 'center',
+              fontWeight: '600'
+            }}>
+              EDIT
+            </div>
           </div>
           <h1 className="profile-name">{isEditing ? formData.name : profileData.name}</h1>
           <div className="profile-role">{profileData.role}</div>
