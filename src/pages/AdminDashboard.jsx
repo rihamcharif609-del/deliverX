@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useDelivery } from '../context/DeliveryContext';
 import MainLayout from '../layouts/MainLayout';
@@ -7,6 +7,7 @@ import ChartPlaceholder from '../components/ChartPlaceholder';
 import DeliveryTable from '../components/DeliveryTable';
 import UserTable from '../components/UserTable';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { 
   FaShieldAlt, 
   FaInfoCircle, 
@@ -24,7 +25,12 @@ import {
 const AdminDashboard = ({ setUserRole }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { deliveries, adminAnalytics, refundDelivery, couriers } = useDelivery();
+  const { user } = useAuth();
+  const { deliveries, adminAnalytics, refundDelivery, couriers, fetchDeliveries } = useDelivery();
+
+  useEffect(() => {
+    fetchDeliveries('admin').catch(() => {});
+  }, [fetchDeliveries]);
 
   // Search & Filter state for the Payment Monitor Table
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,9 +43,6 @@ const AdminDashboard = ({ setUserRole }) => {
   const [refundSuccess, setRefundSuccess] = useState(false);
   const [refundError, setRefundError] = useState('');
 
-  // 1. Dynamic Statistics
-  const totalOrders = (deliveries || []).length;
-  
   // Dynamic stats formatted for cards
   const stats = [
     { title: 'Total Revenue', value: `${(adminAnalytics?.totalRevenue || 0).toFixed(2)} MAD`, change: '+12.5%', icon: '💰', trend: 'positive' },
@@ -124,7 +127,7 @@ const AdminDashboard = ({ setUserRole }) => {
       <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
         <div>
           <h1 style={{ fontSize: '28px', marginBottom: '8px', fontWeight: '700' }}>{t('dashboard')}</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Welcome to the DeliverX Admin Financial & Operations Control Panel.</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Welcome, {user?.name || 'Admin'}, to the DeliverX Admin Financial & Operations Control Panel.</p>
         </div>
         <div style={{
           display: 'flex',

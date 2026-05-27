@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useDelivery } from '../context/DeliveryContext';
+import { useAuth } from '../context/AuthContext';
 import MainLayout from '../layouts/MainLayout';
 import StatCard from '../components/StatCard';
 import ChartPlaceholder from '../components/ChartPlaceholder';
@@ -22,9 +23,15 @@ import {
 const CourierDashboard = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { deliveries, courierEarnings, acceptDelivery, requestWithdrawal, couriers } = useDelivery();
+  const { user } = useAuth();
+  const { deliveries, courierEarnings, acceptDelivery, requestWithdrawal, couriers, fetchDeliveries } = useDelivery();
+  const currentCourierName = user?.name || 'Courier';
 
-  const myCourierInfo = (couriers || []).find(c => c.name === 'Mike Smith') || { rating: 4.8, ratingsCount: 0, completedCount: 0 };
+  useEffect(() => {
+    fetchDeliveries('courier').catch(() => {});
+  }, [fetchDeliveries]);
+
+  const myCourierInfo = (couriers || []).find(c => c.name === currentCourierName) || { rating: 0, ratingsCount: 0, completedCount: 0 };
 
   // State for Withdrawal Modal
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -36,8 +43,7 @@ const CourierDashboard = () => {
   const [withdrawError, setWithdrawError] = useState('');
   const [txnRef, setTxnRef] = useState('');
 
-  // 1. Filter deliveries for this courier ('Mike Smith')
-  const myDeliveries = deliveries.filter(d => d.courier === 'Mike Smith');
+  const myDeliveries = deliveries.filter(d => d.courierId === user?.id || d.courier === currentCourierName);
   const myDelivered = myDeliveries.filter(d => d.status === 'delivered');
   
   // Active deliveries are accepted, paid, picked-up, or in-transit
@@ -66,7 +72,7 @@ const CourierDashboard = () => {
   ];
 
   const handleAcceptNearby = (id) => {
-    acceptDelivery(id, 'Mike Smith');
+    acceptDelivery(id, currentCourierName);
     navigate('/courier/deliveries');
   };
 
@@ -119,7 +125,7 @@ const CourierDashboard = () => {
       {/* HEADER SECTION */}
       <div style={{ marginBottom: '30px' }}>
         <h1 style={{ fontSize: '28px', marginBottom: '8px', fontWeight: '700' }}>{t('dashboard')}</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Welcome back, Mike Smith. Here is your delivery performance & earnings summary.</p>
+        <p style={{ color: 'var(--text-secondary)' }}>Welcome back, {currentCourierName}. Here is your delivery performance and earnings summary.</p>
       </div>
 
       {/* STATS OVERVIEW CARDS */}

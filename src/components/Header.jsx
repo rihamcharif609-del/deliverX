@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 const Header = ({userRole = 'sender', darkMode, setDarkMode }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const {
     getNotificationsForRole,
     markAsRead,
@@ -151,7 +151,12 @@ const Header = ({userRole = 'sender', darkMode, setDarkMode }) => {
     }
   };
 
-  const roleAvatar = userRole === 'admin' ? 'A' : userRole === 'courier' ? 'C' : 'S';
+  const roleAvatar = (user?.name || userRole || 'U')
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <header className="header">

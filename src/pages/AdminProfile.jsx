@@ -1,27 +1,24 @@
 import { useLanguage } from '../context/LanguageContext';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import MainLayout from '../layouts/MainLayout';
+import { useAuth } from '../context/AuthContext';
+import { getAccountStorageKey, readStoredJson, writeStoredJson } from '../utils/accountStorage';
 
 const AdminProfile = ({ navigateTo, onProfileClick }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const storageKey = useMemo(() => getAccountStorageKey('adminProfile', user), [user]);
+  const defaultProfile = useMemo(() => ({
+    name: user?.name || 'Admin',
+    email: user?.email || 'admin@deliverx.com',
+    phone: user?.phone || '+212 600-000000',
+    role: 'Administrator',
+    joinedDate: user?.created_at?.slice(0, 10) || 'Today',
+    avatar: (user?.name || 'Admin').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
+    photo: null
+  }), [user]);
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState(() => {
-    try {
-      const saved = localStorage.getItem('adminProfile');
-      if (saved && saved !== 'undefined') return JSON.parse(saved);
-    } catch (e) {
-      console.error("Error loading adminProfile", e);
-    }
-    return {
-      name: 'John Admin',
-      email: 'admin@deliverx.com',
-      phone: '+1 (555) 123-4567',
-      role: 'Administrator',
-      joinedDate: 'January 15, 2024',
-      avatar: 'A',
-      photo: null
-    };
-  });
+  const [profileData, setProfileData] = useState(() => ({ ...defaultProfile, ...readStoredJson(storageKey, {}) }));
 
   const [formData, setFormData] = useState({ ...profileData });
   const fileInputRef = React.useRef(null);
@@ -37,7 +34,7 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
     reader.onload = () => {
       const updated = { ...profileData, photo: reader.result };
       setProfileData(updated);
-      localStorage.setItem('adminProfile', JSON.stringify(updated));
+      writeStoredJson(storageKey, updated);
     };
     reader.readAsDataURL(file);
   };
@@ -57,7 +54,7 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
   const handleSave = () => {
     const updated = { ...formData };
     setProfileData(updated);
-    localStorage.setItem('adminProfile', JSON.stringify(updated));
+    writeStoredJson(storageKey, updated);
     setIsEditing(false);
   };
 

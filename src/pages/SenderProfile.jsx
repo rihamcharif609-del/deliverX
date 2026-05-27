@@ -1,32 +1,24 @@
 import { useLanguage } from '../context/LanguageContext';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import MainLayout from '../layouts/MainLayout';
+import { useAuth } from '../context/AuthContext';
+import { getAccountStorageKey, readStoredJson, writeStoredJson } from '../utils/accountStorage';
 
 const SenderProfile = ({ navigateTo, onProfileClick }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const storageKey = useMemo(() => getAccountStorageKey('senderProfile', user), [user]);
+  const defaultProfile = useMemo(() => ({
+    name: user?.name || 'Sender',
+    email: user?.email || 'sender@deliverx.com',
+    phone: user?.phone || '+212 600-000000',
+    avatar: (user?.name || 'Sender').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
+    totalDeliveries: 0,
+    totalSpent: 0,
+    photo: null
+  }), [user]);
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState(() => {
-    try {
-      const saved = localStorage.getItem('senderProfile');
-      if (saved && saved !== 'undefined') return JSON.parse(saved);
-    } catch (e) {
-      console.error("Error loading senderProfile", e);
-    }
-    return {
-      name: 'John Sender',
-      email: 'sender@deliverx.com',
-      phone: '+1 (555) 987-6543',
-      avatar: 'JS',
-      totalDeliveries: 156,
-      totalSpent: 1245.50,
-      photo: null
-    };
-  });
-
-  const [addresses, setAddresses] = useState([
-    { id: 1, type: 'Home', address: '123 Main Street, Apt 4B, New York, NY 10001', isDefault: true },
-    { id: 2, type: 'Work', address: '456 Business Ave, Floor 10, New York, NY 10002', isDefault: false }
-  ]);
+  const [profileData, setProfileData] = useState(() => ({ ...defaultProfile, ...readStoredJson(storageKey, {}) }));
 
   const [formData, setFormData] = useState({ ...profileData });
   const fileInputRef = React.useRef(null);
@@ -42,7 +34,7 @@ const SenderProfile = ({ navigateTo, onProfileClick }) => {
     reader.onload = () => {
       const updated = { ...profileData, photo: reader.result };
       setProfileData(updated);
-      localStorage.setItem('senderProfile', JSON.stringify(updated));
+      writeStoredJson(storageKey, updated);
     };
     reader.readAsDataURL(file);
   };
@@ -62,7 +54,7 @@ const SenderProfile = ({ navigateTo, onProfileClick }) => {
   const handleSave = () => {
     const updated = { ...formData };
     setProfileData(updated);
-    localStorage.setItem('senderProfile', JSON.stringify(updated));
+    writeStoredJson(storageKey, updated);
     setIsEditing(false);
   };
 
@@ -76,16 +68,6 @@ const SenderProfile = ({ navigateTo, onProfileClick }) => {
       ...formData,
       [e.target.name]: e.target.value
     });
-  };
-
-  const addNewAddress = () => {
-    const newAddress = {
-      id: addresses.length + 1,
-      type: 'Other',
-      address: '',
-      isDefault: false
-    };
-    setAddresses([...addresses, newAddress]);
   };
 
   return (

@@ -196,6 +196,7 @@ const Register = () => {
           >
             <option value="sender">Send Packages</option>
             <option value="courier">Deliver Packages</option>
+            <option value="admin">Admin Dashboard</option>
           </select>
           {fieldError('role') && (
             <div style={{ marginTop: '6px', color: '#ef4444', fontSize: '13px' }}>

@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth } from './AuthContext';
+import { getAccountStorageKey, readStoredJson, writeStoredJson } from '../utils/accountStorage';
 
 const STORAGE_KEY = 'courierVerification';
 
@@ -18,9 +21,22 @@ const defaultProfile = {
   earnings: 0,
 };
 
-const defaultVerification = {
+const buildDefaultProfile = (user) => ({
+  ...defaultProfile,
+  name: user?.name || defaultProfile.name,
+  email: user?.email || defaultProfile.email,
+  phone: user?.phone || defaultProfile.phone,
+  avatar: (user?.name || defaultProfile.name)
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase(),
+});
+
+const buildDefaultVerification = (user) => ({
   status: 'draft',
-  profile: defaultProfile,
+  profile: buildDefaultProfile(user),
   documents: {
     cinImage: null,
     licenseImage: null,
@@ -29,39 +45,39 @@ const defaultVerification = {
   submittedAt: null,
   reviewedAt: null,
   rejectionReason: '',
-};
+});
 
 const CourierVerificationContext = createContext();
 
-const loadVerification = () => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && saved !== 'undefined') {
-      const parsed = JSON.parse(saved);
-      return {
-        ...defaultVerification,
-        ...parsed,
-        profile: { ...defaultProfile, ...parsed.profile },
-        documents: { ...defaultVerification.documents, ...parsed.documents },
-      };
-    }
-  } catch (e) {
-    console.error('Error parsing courier verification', e);
+const loadVerification = (key, user) => {
+  const defaultVerification = buildDefaultVerification(user);
+  const parsed = readStoredJson(key, null);
+  if (parsed && typeof parsed === 'object') {
+    return {
+      ...defaultVerification,
+      ...parsed,
+      profile: { ...defaultVerification.profile, ...parsed.profile },
+      documents: { ...defaultVerification.documents, ...parsed.documents },
+    };
   }
+
   return defaultVerification;
 };
 
-const syncVerifiedFlag = (status) => {
-  localStorage.setItem('isCourierVerified', status === 'approved' ? 'true' : 'false');
+const syncVerifiedFlag = (key, status) => {
+  localStorage.setItem(`${key}:isVerified`, status === 'approved' ? 'true' : 'false');
 };
 
 export const CourierVerificationProvider = ({ children }) => {
-  const [verification, setVerification] = useState(loadVerification);
+  const { user } = useAuth();
+  const storageKey = useMemo(() => getAccountStorageKey(STORAGE_KEY, user), [user]);
+  const [verification, setVerification] = useState(() => loadVerification(storageKey, user));
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(verification));
-    syncVerifiedFlag(verification.status);
-  }, [verification]);
+    if (!user) return;
+    writeStoredJson(storageKey, verification);
+    syncVerifiedFlag(storageKey, verification.status);
+  }, [storageKey, user, verification]);
 
   const isCourierVerified = verification.status === 'approved';
 
@@ -153,8 +169,8 @@ export const CourierVerificationProvider = ({ children }) => {
   };
 
   const resetVerification = () => {
-    setVerification(defaultVerification);
-    syncVerifiedFlag('draft');
+    setVerification(buildDefaultVerification(user));
+    syncVerifiedFlag(storageKey, 'draft');
   };
 
   return (

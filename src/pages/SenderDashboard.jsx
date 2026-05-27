@@ -1,29 +1,42 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import MainLayout from '../layouts/MainLayout';
 import StatCard from '../components/StatCard';
 import ChartPlaceholder from '../components/ChartPlaceholder';
-import DeliveryTable from '../components/DeliveryTable';
 import { useNavigate } from 'react-router-dom';
 import SenderDeliveryTable from '../components/SenderDeliveryTable';
+import { useDelivery } from '../context/DeliveryContext';
+import { useAuth } from '../context/AuthContext';
 
 const SenderDashboard = ({ navigateTo }) => {
   const { t } = useLanguage();
-  const stats = [
-    { title: 'Total Orders', value: '156', change: '+12%', icon: '📦', trend: 'positive' },
-    { title: 'Active Deliveries', value: '8', change: '+2', icon: '🚚', trend: 'positive' },
-    { title: 'Average Time', value: '45min', change: '-5min', icon: '⏱️', trend: 'positive' },
-    { title: 'Spent This Month', value: '$1,245', change: '+8%', icon: '💰', trend: 'positive' },
-  ];
-
+  const { user } = useAuth();
+  const { deliveries, fetchDeliveries } = useDelivery();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    fetchDeliveries('sender').catch(() => {});
+  }, [fetchDeliveries]);
+
+  const activeDeliveries = deliveries.filter((delivery) =>
+    ['accepted', 'paid', 'picked-up', 'in-transit', 'waiting-courier'].includes(delivery.status)
+  );
+  const totalSpent = deliveries.reduce((sum, delivery) => sum + (Number(delivery.amount) || 0), 0);
+
+  const stats = [
+    { title: 'Total Orders', value: String(deliveries.length), change: 'Your account', icon: 'DX', trend: 'positive' },
+    { title: 'Active Deliveries', value: String(activeDeliveries.length), change: activeDeliveries.length ? 'In progress' : 'None active', icon: 'TR', trend: 'positive' },
+    { title: 'Delivered', value: String(deliveries.filter((delivery) => delivery.status === 'delivered').length), change: 'Completed', icon: 'OK', trend: 'positive' },
+    { title: 'Total Spent', value: `${totalSpent.toFixed(0)} MAD`, change: 'All time', icon: 'MAD', trend: 'positive' },
+  ];
+
   return (
-    <MainLayout userRole="sender" activePage="sender" onNavigate={navigateTo} 
-  >
+    <MainLayout userRole="sender" activePage="sender" onNavigate={navigateTo}>
       <div style={{ marginBottom: '30px' }}>
         <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>{t('dashboard')}</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Manage your deliveries and track packages</p>
+        <p style={{ color: 'var(--text-secondary)' }}>
+          Welcome back, {user?.name || 'Sender'}. Manage your deliveries and track packages.
+        </p>
       </div>
 
       <div className="grid grid-4" style={{ marginBottom: '30px' }}>
@@ -37,25 +50,13 @@ const SenderDashboard = ({ navigateTo }) => {
         <div className="card">
           <h3 style={{ marginBottom: '20px' }}>Quick Actions</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <button 
-              className="btn btn-primary" 
-              style={{ width: '100%' }}
-              onClick={() => navigate('/sender/create')}
-            >
+            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => navigate('/sender/create')}>
               Create New Delivery
             </button>
-            <button 
-              className="btn btn-outline" 
-              style={{ width: '100%' }}
-              onClick={() => navigate('/sender/tracking')}
-            >
+            <button className="btn btn-outline" style={{ width: '100%' }} onClick={() => navigate('/sender/tracking')}>
               Track Package
             </button>
-            <button 
-              className="btn btn-outline" 
-              style={{ width: '100%' }}
-              onClick={() => navigate('/sender/deliveries')}
-            >
+            <button className="btn btn-outline" style={{ width: '100%' }} onClick={() => navigate('/sender/deliveries')}>
               View All Deliveries
             </button>
           </div>

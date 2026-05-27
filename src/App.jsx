@@ -111,9 +111,12 @@ function AppRoutes() {
 }
 
 function App() {
+  const { user } = useAuth();
+  const accountKey = user?.id ? `${user.role}:${user.id}` : 'guest';
+
   return (
-    <DeliveryProvider>
-      <CourierVerificationProvider>
+    <DeliveryProvider key={`delivery:${accountKey}`}>
+      <CourierVerificationProvider key={`verification:${accountKey}`}>
         <AppRoutes />
       </CourierVerificationProvider>
     </DeliveryProvider>

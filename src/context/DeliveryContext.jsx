@@ -1,7 +1,9 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { calculatePrice } from '../utils/calculatePrice';
+import { useAuth } from './AuthContext';
+import { getAccountStorageKey, readStoredJson, writeStoredJson } from '../utils/accountStorage';
 
 const DeliveryContext = createContext();
 
@@ -71,6 +73,8 @@ const mapDeliveryFromApi = (delivery) => {
 
   return {
     apiId: delivery.id,
+    senderId: delivery.sender_id,
+    courierId: delivery.courier_id,
     id: delivery.tracking_code || `DEL-${delivery.id}`,
     customer: delivery.recipient_name || delivery.sender?.name || 'Sender',
     sender: delivery.sender?.name || 'Sender',
@@ -100,6 +104,12 @@ const mapDeliveryFromApi = (delivery) => {
 };
 
 export const DeliveryProvider = ({ children }) => {
+  const { user } = useAuth();
+  const userId = user?.id ? String(user.id) : null;
+  const courierEarningsKey = useMemo(
+    () => getAccountStorageKey('courierEarnings', user),
+    [user]
+  );
   const [deliveries, setDeliveries] = useState([]);
   const [deliveriesLoading, setDeliveriesLoading] = useState(false);
   const [deliveriesError, setDeliveriesError] = useState('');
@@ -118,18 +128,10 @@ export const DeliveryProvider = ({ children }) => {
   });
 
   const [courierEarnings, setCourierEarnings] = useState(() => {
-    try {
-      const saved = localStorage.getItem('courierEarnings');
-      if (saved && saved !== 'undefined') {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
-          return { ...defaultCourierEarnings, ...parsed };
-        }
-      }
-    } catch (e) {
-      console.error("Error parsing courierEarnings", e);
-    }
-    return defaultCourierEarnings;
+    const parsed = readStoredJson(courierEarningsKey, null);
+    return parsed && typeof parsed === 'object'
+      ? { ...defaultCourierEarnings, ...parsed }
+      : defaultCourierEarnings;
   });
 
   const [adminAnalytics, setAdminAnalytics] = useState(() => {
@@ -171,8 +173,9 @@ export const DeliveryProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    localStorage.setItem('courierEarnings', JSON.stringify(courierEarnings));
-  }, [courierEarnings]);
+    if (!user) return;
+    writeStoredJson(courierEarningsKey, courierEarnings);
+  }, [courierEarnings, courierEarningsKey, user]);
 
   useEffect(() => {
     localStorage.setItem('adminAnalytics', JSON.stringify(adminAnalytics));
@@ -304,6 +307,7 @@ export const DeliveryProvider = ({ children }) => {
     addNotification({
       type: 'courier_accepted',
       targetRole: 'sender',
+      targetUserId: acceptedDelivery.senderId,
       text: `Courier Accepted Delivery`,
       description: `Courier ${courierName} accepted your delivery ${deliveryId}. Proceed to payment!`,
       time: 'Just now',
@@ -352,6 +356,7 @@ export const DeliveryProvider = ({ children }) => {
     addNotification({
       type: 'payment_received',
       targetRole: 'sender',
+      targetUserId: userId,
       text: `Payment Confirmed`,
       description: `You paid ${targetAmount} MAD for ${deliveryId}. Your OTP code is ${code} — share it with the courier upon delivery.`,
       time: 'Just now',
@@ -362,6 +367,7 @@ export const DeliveryProvider = ({ children }) => {
     addNotification({
       type: 'courier_notify_paid',
       targetRole: 'courier',
+      targetUserId: deliveries.find((delivery) => delivery.id === deliveryId)?.courierId,
       text: `Order ${deliveryId} Paid!`,
       description: `Sender completed online payment. You can now start pickup.`,
       time: 'Just now',
@@ -382,6 +388,8 @@ export const DeliveryProvider = ({ children }) => {
 
   // 4. Update delivery state (Courier: picked-up, in-transit)
   const updateDeliveryState = (deliveryId, nextStatus) => {
+    const target = deliveries.find((delivery) => delivery.id === deliveryId);
+
     setDeliveries(prev => prev.map(d => {
       if (d.id === deliveryId) {
         return {
@@ -396,6 +404,7 @@ export const DeliveryProvider = ({ children }) => {
     addNotification({
       type: 'status_update',
       targetRole: 'sender',
+      targetUserId: target?.senderId,
       text: `Delivery status: ${nextStatus.toUpperCase()}`,
       description: `Delivery ${deliveryId} is now ${nextStatus.replace('-', ' ')}.`,
       time: 'Just now',
@@ -451,6 +460,7 @@ export const DeliveryProvider = ({ children }) => {
       addNotification({
         type: 'delivery_completed',
         targetRole: 'sender',
+        targetUserId: updated.find((delivery) => delivery.id === deliveryId)?.senderId,
         text: `Delivery Completed!`,
         description: `Order ${deliveryId} delivered. Funds released. Thank you!`,
         time: 'Just now',
@@ -461,6 +471,7 @@ export const DeliveryProvider = ({ children }) => {
       addNotification({
         type: 'payout_released',
         targetRole: 'courier',
+        targetUserId: userId,
         text: `Earnings Released!`,
         description: `OTP match. +${courierEarn} MAD credited to your balance.`,
         time: 'Just now',
@@ -544,6 +555,7 @@ export const DeliveryProvider = ({ children }) => {
       addNotification({
         type: 'delivery_refunded',
         targetRole: 'sender',
+        targetUserId: deliveries.find((delivery) => delivery.id === deliveryId)?.senderId,
         text: `Refund Processed for ${deliveryId}`,
         description: `Admin approved refund of ${targetAmount} MAD to your account.`,
         time: 'Just now',
@@ -554,6 +566,7 @@ export const DeliveryProvider = ({ children }) => {
       addNotification({
         type: 'courier_notify_refunded',
         targetRole: 'courier',
+        targetUserId: deliveries.find((delivery) => delivery.id === deliveryId)?.courierId,
         text: `Order ${deliveryId} Cancelled & Refunded`,
         description: `Admin processed a dispute refund. Escrow earnings reverted.`,
         time: 'Just now',
@@ -576,7 +589,11 @@ export const DeliveryProvider = ({ children }) => {
   };
 
   const getNotificationsForRole = (role) =>
-    notifications.filter((n) => n.targetRole === role);
+    notifications.filter((n) => {
+      if (n.targetRole !== role) return false;
+      if (n.targetUserId == null) return role === 'admin';
+      return userId && String(n.targetUserId) === userId;
+    });
 
   const markAsRead = (id, role) => {
     setNotifications(prev =>
