@@ -1,6 +1,6 @@
 import { useLanguage } from '../context/LanguageContext';
 import { useDelivery } from '../context/DeliveryContext';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import MainLayout from '../layouts/MainLayout';
 import DeliveryTable from '../components/DeliveryTable';
 import DeliveryDetailModal from '../components/DeliveryDetailModal';
@@ -9,13 +9,17 @@ import autoTable from 'jspdf-autotable';
 
 const AdminDeliveries = ({ setUserRole, userRole }) => {
   const { t } = useLanguage();
-  const { deliveries } = useDelivery();
+  const { deliveries, deliveriesError, deliveriesLoading, fetchDeliveries } = useDelivery();
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDelivery, setSelectedDelivery] = useState(null);
   const tableDataRef = useRef([]);
 
   const filters = ['All', 'Pending', 'In Transit', 'Delivered', 'Cancelled'];
+
+  useEffect(() => {
+    fetchDeliveries('admin').catch(() => {});
+  }, [fetchDeliveries]);
 
   const handleExportPDF = () => {
     const doc = new jsPDF();
@@ -106,6 +110,12 @@ const AdminDeliveries = ({ setUserRole, userRole }) => {
         onViewDetails={setSelectedDelivery}
         onDataChange={(data) => { tableDataRef.current = data; }}
       />
+      {deliveriesLoading && (
+        <p style={{ marginTop: '16px', color: 'var(--text-secondary)' }}>Loading deliveries...</p>
+      )}
+      {deliveriesError && (
+        <p style={{ marginTop: '16px', color: '#ef4444' }}>{deliveriesError}</p>
+      )}
 
       <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <p style={{ color: 'var(--text-secondary)' }}>{t('showingDeliveries')}</p>

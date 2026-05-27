@@ -28,6 +28,8 @@ const CreateDelivery = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -84,15 +86,49 @@ const CreateDelivery = () => {
     ]
   );
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    createDelivery({
-      ...formData,
-      calculatedAmount: priceQuote.total,
-      distanceKm: priceQuote.distanceKm,
-    });
-    navigate('/sender/deliveries');
+
+    setSubmitError('');
+    setLoading(true);
+
+    try {
+      await createDelivery({
+        ...formData,
+        calculatedAmount: priceQuote.total,
+        distanceKm: priceQuote.distanceKm,
+      });
+      navigate('/sender/deliveries');
+    } catch (err) {
+      const apiErrors = err.response?.data?.errors || {};
+      const fieldMap = {
+        pickup_address: 'pickupAddress',
+        pickup_contact_name: 'pickupContactName',
+        pickup_contact_phone: 'pickupContactPhone',
+        delivery_address: 'deliveryAddress',
+        recipient_name: 'recipientName',
+        recipient_phone: 'recipientPhone',
+        package_weight: 'packageWeight',
+        delivery_date: 'deliveryDate',
+        delivery_time: 'deliveryTime',
+      };
+      const nextErrors = {};
+
+      Object.entries(apiErrors).forEach(([field, messages]) => {
+        if (fieldMap[field]) {
+          nextErrors[fieldMap[field]] = messages[0];
+        }
+      });
+
+      setErrors((prev) => ({ ...prev, ...nextErrors }));
+      setSubmitError(
+        err.response?.data?.message ||
+        'Delivery could not be created. Please check your information and try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderError = (field) =>
@@ -112,6 +148,21 @@ const CreateDelivery = () => {
       </div>
 
       <form onSubmit={handleSubmit} noValidate>
+        {submitError && (
+          <div
+            style={{
+              marginBottom: '20px',
+              padding: '12px',
+              borderRadius: '8px',
+              background: 'rgba(239, 68, 68, 0.1)',
+              color: '#ef4444',
+              fontSize: '14px',
+            }}
+          >
+            {submitError}
+          </div>
+        )}
+
         <div className="grid grid-2" style={{ gap: '30px' }}>
           <div className="card">
             <h3 style={{ marginBottom: '20px' }}>{t('pickupLocation')}</h3>
@@ -375,11 +426,12 @@ const CreateDelivery = () => {
             type="button"
             className="btn btn-outline"
             onClick={() => navigate('/sender')}
+            disabled={loading}
           >
             Cancel
           </button>
-          <button type="submit" className="btn btn-primary">
-            {t('submitRequest')}
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? 'Creating...' : t('submitRequest')}
           </button>
         </div>
       </form>

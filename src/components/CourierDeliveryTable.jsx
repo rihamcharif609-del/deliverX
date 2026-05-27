@@ -3,7 +3,7 @@ import StatusBadge from './StatusBadge';
 import { useDelivery } from '../context/DeliveryContext';
 import { FaMotorcycle, FaBoxOpen, FaRoute, FaCheckCircle, FaLock, FaKey, FaSpinner, FaTimes } from 'react-icons/fa';
 
-const CourierDeliveryTable = ({ selectedFilter = 'All', onViewDetails }) => {
+const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onViewDetails }) => {
   const { deliveries, updateDeliveryState, confirmDeliveryOTP } = useDelivery();
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpTargetId, setOtpTargetId] = useState(null);
@@ -12,11 +12,17 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', onViewDetails }) => {
   const [otpSuccess, setOtpSuccess] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // Filter deliveries assigned to courier 'Mike Smith'
-  const courierDeliveries = deliveries.filter(d => d.courier === 'Mike Smith');
-
-  const filteredData = courierDeliveries.filter((d) => {
+  const filteredData = deliveries.filter((d) => {
     let mappedFilter = selectedFilter.toLowerCase();
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
+      !query ||
+      String(d.id || '').toLowerCase().includes(query) ||
+      String(d.pickup || d.from || '').toLowerCase().includes(query) ||
+      String(d.destination || d.to || '').toLowerCase().includes(query);
+
+    if (!matchesSearch) return false;
+
     if (mappedFilter === 'pending') {
       return d.status === 'accepted' || d.status === 'paid' || d.status === 'picked-up';
     }

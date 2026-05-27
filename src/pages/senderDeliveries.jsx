@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { useDelivery } from '../context/DeliveryContext';
@@ -6,9 +6,9 @@ import MainLayout from '../layouts/MainLayout';
 import SenderDeliveryTable from '../components/SenderDeliveryTable';
 import PaymentModal from '../components/PaymentModal';
 
-const SenderDeliveries = ({ setUserRole, userRole }) => {
+const SenderDeliveries = ({ userRole }) => {
   const { t } = useLanguage();
-  const { deliveries } = useDelivery();
+  const { deliveries, deliveriesError, deliveriesLoading, fetchDeliveries } = useDelivery();
   const filters = ['All', 'Pending', 'In Transit', 'Delivered', 'Cancelled'];
 
   const [activeFilter, setActiveFilter] = useState('All');
@@ -17,6 +17,10 @@ const SenderDeliveries = ({ setUserRole, userRole }) => {
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchDeliveries('sender').catch(() => {});
+  }, [fetchDeliveries]);
 
   const handleOpenPayment = (delivery) => {
     setPayTargetDelivery(delivery);
@@ -94,6 +98,12 @@ const SenderDeliveries = ({ setUserRole, userRole }) => {
         searchQuery={searchQuery}
         onPayClick={handleOpenPayment}
       />
+      {deliveriesLoading && (
+        <p style={{ marginTop: '16px', color: 'var(--text-secondary)' }}>Loading deliveries...</p>
+      )}
+      {deliveriesError && (
+        <p style={{ marginTop: '16px', color: '#ef4444' }}>{deliveriesError}</p>
+      )}
 
       <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>

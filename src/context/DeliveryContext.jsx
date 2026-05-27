@@ -1,84 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 import { calculatePrice } from '../utils/calculatePrice';
 
 const DeliveryContext = createContext();
 
-const defaultDeliveries = [
-  {
-    id: 'DEL-9811',
-    customer: 'John Sender',
-    from: 'Maarif, Casablanca',
-    to: 'Agdal, Rabat',
-    pickup: 'Maarif, Casablanca',
-    destination: 'Agdal, Rabat',
-    type: 'Documents',
-    packageType: 'Documents',
-    weight: '0.5 kg',
-    courier: 'Yassine Mansouri',
-    courierVehicle: 'Scooter',
-    courierRating: '4.9',
-    courierPhone: '+212 661-234567',
-    courierArrival: '25 min',
-    amount: 120,
-    total: 120,
-    commission: 18, // 15%
-    netAmount: 102,
-    status: 'delivered',
-    paymentStatus: 'released',
-    otp: '4821',
-    date: '2026-05-20',
-    time: '10:30 AM',
-    instructions: 'Please call when arriving at the office building.'
-  },
-  {
-    id: 'DEL-9812',
-    customer: 'Sarah Connor',
-    from: 'Gueliz, Marrakech',
-    to: 'Medina, Marrakech',
-    pickup: 'Gueliz, Marrakech',
-    destination: 'Medina, Marrakech',
-    type: 'Parcel',
-    packageType: 'Parcel',
-    weight: '3.5 kg',
-    courier: 'Emma Brown',
-    courierVehicle: 'E-Bike',
-    courierRating: '4.8',
-    courierPhone: '+212 662-897654',
-    courierArrival: '15 min',
-    amount: 80,
-    total: 80,
-    commission: 12,
-    netAmount: 68,
-    status: 'in-transit',
-    paymentStatus: 'held',
-    otp: '3391',
-    date: '2026-05-21',
-    time: '02:15 PM',
-    instructions: 'Fragile package containing ceramic products.'
-  },
-  {
-    id: 'DEL-9813',
-    customer: 'John Sender',
-    from: 'Hay Riad, Rabat',
-    to: 'Agdal, Rabat',
-    pickup: 'Hay Riad, Rabat',
-    destination: 'Agdal, Rabat',
-    type: 'Electronics',
-    packageType: 'Electronics',
-    weight: '1.2 kg',
-    courier: null,
-    amount: 90,
-    total: 90,
-    commission: 13.5,
-    netAmount: 76.5,
-    status: 'waiting-courier',
-    paymentStatus: 'pending',
-    otp: null,
-    date: '2026-05-21',
-    time: '11:00 AM',
-    instructions: 'Deliver to 3rd floor apartment.'
-  }
-];
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 const defaultCourierEarnings = {
   total: 6825,
@@ -130,19 +57,52 @@ const migrateNotification = (notif) => ({
   targetRole: resolveNotificationRole(notif),
 });
 
+const toNumber = (value) => Number.parseFloat(value || 0);
+
+const extractPackageType = (description) => {
+  const match = String(description || '').match(/^Type:\s*(.+)$/im);
+  return match?.[1] || 'Parcel';
+};
+
+const mapDeliveryFromApi = (delivery) => {
+  const amount = toNumber(delivery.amount);
+  const commission = toNumber(delivery.commission);
+  const packageType = extractPackageType(delivery.package_description);
+
+  return {
+    apiId: delivery.id,
+    id: delivery.tracking_code || `DEL-${delivery.id}`,
+    customer: delivery.recipient_name || delivery.sender?.name || 'Sender',
+    sender: delivery.sender?.name || 'Sender',
+    from: delivery.pickup_address,
+    to: delivery.delivery_address,
+    pickup: delivery.pickup_address,
+    destination: delivery.delivery_address,
+    pickupContact: delivery.pickup_contact_name || '',
+    pickupPhone: delivery.pickup_contact_phone || '',
+    phone: delivery.recipient_phone || '',
+    type: packageType,
+    packageType,
+    weight: delivery.package_weight ? `${delivery.package_weight} kg` : 'N/A',
+    courier: delivery.courier?.name || null,
+    courierPhone: delivery.courier?.phone || '',
+    amount,
+    total: amount,
+    commission,
+    netAmount: amount - commission,
+    status: delivery.status,
+    paymentStatus: delivery.payment_status === 'unpaid' ? 'pending' : delivery.payment_status,
+    date: delivery.delivery_date || delivery.created_at?.slice(0, 10) || '',
+    time: delivery.delivery_time || '',
+    instructions: delivery.notes || delivery.package_description || '',
+    createdAt: delivery.created_at,
+  };
+};
+
 export const DeliveryProvider = ({ children }) => {
-  const [deliveries, setDeliveries] = useState(() => {
-    try {
-      const saved = localStorage.getItem('myDeliveries');
-      if (saved && saved !== 'undefined') {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) {
-      console.error("Error parsing myDeliveries", e);
-    }
-    return defaultDeliveries;
-  });
+  const [deliveries, setDeliveries] = useState([]);
+  const [deliveriesLoading, setDeliveriesLoading] = useState(false);
+  const [deliveriesError, setDeliveriesError] = useState('');
 
   const [couriers, setCouriers] = useState(() => {
     try {
@@ -211,10 +171,6 @@ export const DeliveryProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    localStorage.setItem('myDeliveries', JSON.stringify(deliveries));
-  }, [deliveries]);
-
-  useEffect(() => {
     localStorage.setItem('courierEarnings', JSON.stringify(courierEarnings));
   }, [courierEarnings]);
 
@@ -239,8 +195,36 @@ export const DeliveryProvider = ({ children }) => {
     other: 'Other',
   };
 
+  const fetchDeliveries = useCallback(async (scope = 'sender') => {
+    const endpoints = {
+      admin: `${API_BASE_URL}/admin/deliveries`,
+      sender: `${API_BASE_URL}/sender/deliveries`,
+      courier: `${API_BASE_URL}/courier/deliveries`,
+      available: `${API_BASE_URL}/courier/deliveries/available`,
+    };
+
+    setDeliveriesLoading(true);
+    setDeliveriesError('');
+
+    try {
+      const { data } = await axios.get(endpoints[scope] || endpoints.sender);
+      const rows = Array.isArray(data.data) ? data.data : [];
+      const mapped = rows.map(mapDeliveryFromApi);
+      setDeliveries(mapped);
+      return mapped;
+    } catch (err) {
+      const message =
+        err.response?.data?.message ||
+        'Could not load deliveries from the backend.';
+      setDeliveriesError(message);
+      throw err;
+    } finally {
+      setDeliveriesLoading(false);
+    }
+  }, []);
+
   // 1. Create a delivery request (Sender)
-  const createDelivery = (formData) => {
+  const createDelivery = async (formData) => {
     const weightKg = parseFloat(formData.packageWeight || 1);
     const priceQuote =
       formData.calculatedAmount != null
@@ -260,38 +244,34 @@ export const DeliveryProvider = ({ children }) => {
     const packageLabel =
       PACKAGE_TYPE_LABELS[formData.packageType] || PACKAGE_TYPE_LABELS.documents;
 
+    const { data } = await axios.post(`${API_BASE_URL}/sender/deliveries`, {
+      pickup_address: formData.pickupAddress,
+      pickup_contact_name: formData.pickupContactName,
+      pickup_contact_phone: formData.pickupContactPhone,
+      delivery_address: formData.deliveryAddress,
+      recipient_name: formData.recipientName,
+      recipient_phone: formData.recipientPhone,
+      package_description: [
+        `Type: ${formData.packageType}`,
+        formData.packageDimensions ? `Dimensions: ${formData.packageDimensions}` : null,
+        formData.declaredValue ? `Declared value: ${formData.declaredValue} MAD` : null,
+        formData.instructions ? `Instructions: ${formData.instructions}` : null,
+      ].filter(Boolean).join('\n'),
+      package_weight: weightKg,
+      delivery_date: formData.deliveryDate,
+      delivery_time: formData.deliveryTime,
+      amount,
+      commission,
+      payment_status: 'unpaid',
+      notes: formData.instructions,
+    });
+
     const newDelivery = {
-      id: 'DEL-' + Math.floor(1000 + Math.random() * 9000),
-      customer: formData.recipientName || formData.pickupContactName || 'John Sender',
-      from: formData.pickupAddress,
-      to: formData.deliveryAddress,
-      pickup: formData.pickupAddress,
-      destination: formData.deliveryAddress,
-      pickupContact: formData.pickupContactName || '',
-      pickupPhone: formData.pickupContactPhone || '',
-      phone: formData.recipientPhone || '',
+      ...mapDeliveryFromApi(data.data),
       type: packageLabel,
       packageType: packageLabel,
-      weight: `${weightKg} kg`,
-      dimensions: formData.packageDimensions || '',
-      declaredValue: formData.declaredValue ? parseFloat(formData.declaredValue) : null,
-      priority: formData.priority || 'standard',
+      netAmount,
       distanceKm: priceQuote.distanceKm,
-      courier: null,
-      courierVehicle: null,
-      courierRating: null,
-      courierPhone: null,
-      courierArrival: null,
-      amount: amount,
-      total: amount,
-      commission: commission,
-      netAmount: netAmount,
-      status: 'waiting-courier',
-      paymentStatus: 'pending',
-      otp: null,
-      date: formData.deliveryDate || new Date().toISOString().split('T')[0],
-      time: formData.deliveryTime || '10:30 AM',
-      instructions: formData.instructions || ''
     };
 
     setDeliveries(prev => [newDelivery, ...prev]);
@@ -309,22 +289,17 @@ export const DeliveryProvider = ({ children }) => {
   };
 
   // 2. Accept a delivery (Courier)
-  const acceptDelivery = (deliveryId, courierName = 'Mike Smith') => {
-    setDeliveries(prev => prev.map(d => {
-      if (d.id === deliveryId && d.status === 'waiting-courier') {
-        // First courier to accept gets it
-        return {
-          ...d,
-          status: 'accepted',
-          courier: courierName,
-          courierVehicle: 'Motorcycle',
-          courierRating: '4.8',
-          courierPhone: '+212 663-112233',
-          courierArrival: '12 min'
-        };
-      }
-      return d;
-    }));
+  const acceptDelivery = async (deliveryId, courierName = 'Courier') => {
+    const target = deliveries.find((delivery) => delivery.id === deliveryId);
+    const apiId = target?.apiId || deliveryId;
+    const { data } = await axios.post(`${API_BASE_URL}/courier/deliveries/${apiId}/accept`);
+    const acceptedDelivery = mapDeliveryFromApi(data.data);
+
+    setDeliveries(prev =>
+      prev.map((delivery) =>
+        delivery.id === deliveryId ? acceptedDelivery : delivery
+      )
+    );
 
     addNotification({
       type: 'courier_accepted',
@@ -335,6 +310,8 @@ export const DeliveryProvider = ({ children }) => {
       path: `/sender/deliveries`,
       deliveryId: deliveryId
     });
+
+    return acceptedDelivery;
   };
 
   // 3. Process payment (Sender)
@@ -416,10 +393,6 @@ export const DeliveryProvider = ({ children }) => {
     }));
 
     // Add status timeline notifications
-    let desc = '';
-    if (nextStatus === 'picked-up') desc = `Package was successfully picked up.`;
-    else if (nextStatus === 'in-transit') desc = `Package is in transit to the destination.`;
-
     addNotification({
       type: 'status_update',
       targetRole: 'sender',
@@ -676,10 +649,13 @@ export const DeliveryProvider = ({ children }) => {
   return (
     <DeliveryContext.Provider value={{
       deliveries,
+      deliveriesLoading,
+      deliveriesError,
       courierEarnings,
       adminAnalytics,
       notifications,
       getNotificationsForRole,
+      fetchDeliveries,
       createDelivery,
       acceptDelivery,
       payDelivery,

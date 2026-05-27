@@ -1,8 +1,7 @@
-import { Routes, Route } from 'react-router-dom';
+import { Navigate, Routes, Route, useLocation } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import SenderDashboard from './pages/SenderDashboard';
 import CourierDashboard from './pages/CourierDashboard';
@@ -22,50 +21,91 @@ import VerificationPending from './pages/VerificationPending';
 import AdminCourierVerification from './pages/AdminCourierVerification';
 import { DeliveryProvider } from './context/DeliveryContext';
 import { CourierVerificationProvider, useCourierVerification } from './context/CourierVerificationContext';
+import { useAuth } from './context/AuthContext';
 import './styles/profile.css';
-import React, { useState } from 'react';
+import React from 'react';
+
+const roleRoutes = {
+  admin: '/admin',
+  sender: '/sender',
+  courier: '/courier',
+};
+
+const RequireAuth = ({ allowedRoles, children }) => {
+  const { initializing, isAuthenticated, userRole } = useAuth();
+  const location = useLocation();
+
+  if (initializing) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(userRole)) {
+    return <Navigate to={roleRoutes[userRole] || '/login'} replace />;
+  }
+
+  return children;
+};
+
+const PublicAuthRoute = ({ children }) => {
+  const { initializing, isAuthenticated, userRole } = useAuth();
+
+  if (initializing) {
+    return null;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to={roleRoutes[userRole] || '/sender'} replace />;
+  }
+
+  return children;
+};
 
 function AppRoutes() {
-  const [userRole, setUserRole] = useState('admin');
+  const { userRole } = useAuth();
   const { isCourierVerified } = useCourierVerification();
+  const setUserRole = () => {};
 
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<Login setUserRole={setUserRole} />} />
-      <Route path="/register" element={<Register />} />
+      <Route path="/login" element={<PublicAuthRoute><Login /></PublicAuthRoute>} />
+      <Route path="/register" element={<PublicAuthRoute><Register /></PublicAuthRoute>} />
 
       {/* ADMIN */}
-      <Route path="/admin" element={<AdminDashboard setUserRole={setUserRole} />} />
-      <Route path="/admin/deliveries" element={<AdminDeliveries userRole={userRole} setUserRole={setUserRole} />} />
-      <Route path="/admin/users" element={<Users setUserRole={setUserRole} />} />
+      <Route path="/admin" element={<RequireAuth allowedRoles={['admin']}><AdminDashboard setUserRole={setUserRole} /></RequireAuth>} />
+      <Route path="/admin/deliveries" element={<RequireAuth allowedRoles={['admin']}><AdminDeliveries userRole={userRole} setUserRole={setUserRole} /></RequireAuth>} />
+      <Route path="/admin/users" element={<RequireAuth allowedRoles={['admin']}><Users setUserRole={setUserRole} /></RequireAuth>} />
       <Route
         path="/admin/courier-verification"
-        element={<AdminCourierVerification setUserRole={setUserRole} />}
+        element={<RequireAuth allowedRoles={['admin']}><AdminCourierVerification setUserRole={setUserRole} /></RequireAuth>}
       />
-      <Route path="/admin/profile" element={<AdminProfile />} />
-      <Route path="/admin/users/:id" element={<UserProfile />} />
-      <Route path="/admin/users/Details/:id" element={<UserDetails />} />
+      <Route path="/admin/profile" element={<RequireAuth allowedRoles={['admin']}><AdminProfile /></RequireAuth>} />
+      <Route path="/admin/users/:id" element={<RequireAuth allowedRoles={['admin']}><UserProfile /></RequireAuth>} />
+      <Route path="/admin/users/Details/:id" element={<RequireAuth allowedRoles={['admin']}><UserDetails /></RequireAuth>} />
 
       {/* SENDER */}
-      <Route path="/sender" element={<SenderDashboard />} />
-      <Route path="/sender/deliveries" element={<SenderDeliveries userRole={userRole} setUserRole={setUserRole} />} />
-      <Route path="/sender/create" element={<CreateDelivery />} />
-      <Route path="/sender/tracking" element={<Tracking />} />
-      <Route path="/sender/tracking/:id" element={<Tracking />} />
-      <Route path="/sender/profile" element={<SenderProfile />} />
+      <Route path="/sender" element={<RequireAuth allowedRoles={['sender']}><SenderDashboard /></RequireAuth>} />
+      <Route path="/sender/deliveries" element={<RequireAuth allowedRoles={['sender']}><SenderDeliveries userRole={userRole} setUserRole={setUserRole} /></RequireAuth>} />
+      <Route path="/sender/create" element={<RequireAuth allowedRoles={['sender']}><CreateDelivery /></RequireAuth>} />
+      <Route path="/sender/tracking" element={<RequireAuth allowedRoles={['sender']}><Tracking /></RequireAuth>} />
+      <Route path="/sender/tracking/:id" element={<RequireAuth allowedRoles={['sender']}><Tracking /></RequireAuth>} />
+      <Route path="/sender/profile" element={<RequireAuth allowedRoles={['sender']}><SenderProfile /></RequireAuth>} />
 
       {/* COURIER */}
-      <Route path="/courier" element={<CourierDashboard />} />
+      <Route path="/courier" element={<RequireAuth allowedRoles={['courier']}><CourierDashboard /></RequireAuth>} />
       <Route
         path="/courier/available"
-        element={isCourierVerified ? <AvailableDeliveries /> : <VerificationPending />}
+        element={<RequireAuth allowedRoles={['courier']}>{isCourierVerified ? <AvailableDeliveries /> : <VerificationPending />}</RequireAuth>}
       />
       <Route
         path="/courier/deliveries"
-        element={isCourierVerified ? <CourierDeliveries userRole={userRole} setUserRole={setUserRole} /> : <VerificationPending />}
+        element={<RequireAuth allowedRoles={['courier']}>{isCourierVerified ? <CourierDeliveries userRole={userRole} setUserRole={setUserRole} /> : <VerificationPending />}</RequireAuth>}
       />
-      <Route path="/courier/profile" element={<CourierProfile />} />
+      <Route path="/courier/profile" element={<RequireAuth allowedRoles={['courier']}><CourierProfile /></RequireAuth>} />
     </Routes>
   );
 }

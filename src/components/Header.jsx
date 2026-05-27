@@ -4,10 +4,12 @@ import SettingsPanel from './SettingsPanel';
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useDelivery } from '../context/DeliveryContext';
+import { useAuth } from '../context/AuthContext';
 
-const Header = ({userRole = 'sender', title, navigateTo, darkMode, setDarkMode }) => {
+const Header = ({userRole = 'sender', darkMode, setDarkMode }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const {
     getNotificationsForRole,
     markAsRead,
@@ -62,8 +64,9 @@ const Header = ({userRole = 'sender', title, navigateTo, darkMode, setDarkMode }
     return () => document.removeEventListener('click', handleOutsideClick);
   }, [showProfileMenu]);
 
-  const handleLogout = () => {
-    navigateTo('login');
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
   };
 
   // Notification action handlers
@@ -257,7 +260,7 @@ const Header = ({userRole = 'sender', title, navigateTo, darkMode, setDarkMode }
 
               <div
                 className="dropdown-item logout"
-                onClick={() => navigate('/')}
+                onClick={handleLogout}
               >
                 <FaSignOutAlt />
                 <span>{t('logout')}</span>

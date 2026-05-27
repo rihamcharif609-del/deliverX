@@ -1,20 +1,23 @@
 import { useLanguage } from '../context/LanguageContext';
 import React from 'react';
 import MainLayout from '../layouts/MainLayout';
-import StatusBadge from '../components/StatusBadge';
+import { useDelivery } from '../context/DeliveryContext';
 import { useEffect } from 'react';
 import CourierDeliveryTable from '../components/CourierDeliveryTable';
 import DeliveryDetailModal from '../components/DeliveryDetailModal';
 
 
-const CourierDeliveries = ({ navigateTo, setUserRole, userRole }) => {
+const CourierDeliveries = ({ navigateTo, userRole }) => {
   const { t } = useLanguage();
   const filters = ['All', 'Pending', 'In Transit', 'Delivered', 'Cancelled'];
   const [activeFilter, setActiveFilter] = React.useState('All');
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchQuery] = React.useState('');
 const [selectedDelivery, setSelectedDelivery] = React.useState(null);
+  const { deliveriesError, deliveriesLoading, fetchDeliveries } = useDelivery();
 
-
+  useEffect(() => {
+    fetchDeliveries('courier').catch(() => {});
+  }, [fetchDeliveries]);
     
 
   return (
@@ -41,12 +44,18 @@ const [selectedDelivery, setSelectedDelivery] = React.useState(null);
     
       </div>
 
-      <CourierDeliveryTable 
+<CourierDeliveryTable 
   selectedFilter={activeFilter}
   searchQuery={searchQuery}
   showActions={false} 
   onViewDetails={setSelectedDelivery}
 />
+      {deliveriesLoading && (
+        <p style={{ marginTop: '16px', color: 'var(--text-secondary)' }}>Loading deliveries...</p>
+      )}
+      {deliveriesError && (
+        <p style={{ marginTop: '16px', color: '#ef4444' }}>{deliveriesError}</p>
+      )}
 
       <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <p style={{ color: 'var(--text-secondary)' }}>{t('showingDeliveries')}</p>

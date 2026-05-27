@@ -1,10 +1,8 @@
 import { useLanguage } from '../context/LanguageContext';
 import React, { useState } from 'react';
-import axios from 'axios';
 import AuthLayout from '../layouts/AuthLayout';
 import { useNavigate } from 'react-router-dom';
-
-const LOGIN_URL = 'http://localhost:8000/api/v1/auth/login';
+import { useAuth } from '../context/AuthContext';
 
 const roleRoutes = {
   admin: '/admin',
@@ -12,8 +10,9 @@ const roleRoutes = {
   courier: '/courier',
 };
 
-const Login = ({ setUserRole }) => {
+const Login = () => {
   const { t } = useLanguage();
+  const { login: authenticate } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,10 +20,7 @@ const Login = ({ setUserRole }) => {
 
   const navigate = useNavigate();
 
-  const completeLogin = (user, token) => {
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('auth_user', JSON.stringify(user));
-    setUserRole(user.role);
+  const completeLogin = (user) => {
     navigate(roleRoutes[user.role] || '/sender');
   };
 
@@ -33,13 +29,12 @@ const Login = ({ setUserRole }) => {
     setLoading(true);
 
     try {
-      const { data } = await axios.post(LOGIN_URL, {
+      const user = await authenticate({
         email: loginEmail,
         password: loginPassword,
-        device_name: 'deliverx-web',
       });
 
-      completeLogin(data.user, data.token);
+      completeLogin(user);
     } catch (err) {
       const message =
         err.response?.data?.message ||
@@ -54,10 +49,6 @@ const Login = ({ setUserRole }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     login(email, password);
-  };
-
-  const handleDemoLogin = (demoEmail) => {
-    login(demoEmail, 'password');
   };
 
   return (
@@ -131,39 +122,6 @@ const Login = ({ setUserRole }) => {
           </a>
         </p>
       </form>
-
-      <div style={{ marginTop: '30px', textAlign: 'center' }}>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '10px' }}>Demo Accounts:</p>
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-          <button
-            type="button"
-            className="btn btn-outline"
-            style={{ padding: '8px 16px', fontSize: '12px' }}
-            disabled={loading}
-            onClick={() => handleDemoLogin('admin@deliverx.com')}
-          >
-            Admin
-          </button>
-          <button
-            type="button"
-            className="btn btn-outline"
-            style={{ padding: '8px 16px', fontSize: '12px' }}
-            disabled={loading}
-            onClick={() => handleDemoLogin('sender@deliverx.com')}
-          >
-            Sender
-          </button>
-          <button
-            type="button"
-            className="btn btn-outline"
-            style={{ padding: '8px 16px', fontSize: '12px' }}
-            disabled={loading}
-            onClick={() => handleDemoLogin('courier@deliverx.com')}
-          >
-            Courier
-          </button>
-        </div>
-      </div>
     </AuthLayout>
   );
 };

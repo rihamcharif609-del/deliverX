@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useDelivery } from '../context/DeliveryContext';
 import { useNavigate } from 'react-router-dom';
@@ -7,27 +7,21 @@ import { FaMapMarkerAlt, FaWeightHanging, FaRoute, FaClock, FaCheckCircle, FaBox
 
 const AvailableDeliveries = () => {
   const { t } = useLanguage();
-  const { deliveries, acceptDelivery } = useDelivery();
+  const { deliveries, deliveriesError, deliveriesLoading, acceptDelivery, fetchDeliveries } = useDelivery();
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('distance');
 
-  // Filter deliveries that are waiting for a courier
-  const availableRequests = deliveries.filter(d => d.status === 'waiting-courier');
+  useEffect(() => {
+    fetchDeliveries('available').catch(() => {});
+  }, [fetchDeliveries]);
 
-  // Map context deliveries to list view with simulated meta for nicer UI
-  const mappedDeliveries = availableRequests.map(d => {
-    // Generate some mock/simulated distance and duration for the premium UI
-    const randomDistance = (2.0 + Math.random() * 8.5).toFixed(1);
-    const estDuration = Math.round(randomDistance * 6 + 5);
-
-    return {
-      ...d,
-      distance: `${randomDistance} km`,
-      estimatedTime: `${estDuration} min`,
-      pickupCode: 'P-' + d.id.split('-')[1]
-    };
-  });
+  const mappedDeliveries = deliveries.map(d => ({
+    ...d,
+    distance: d.distanceKm ? `${d.distanceKm} km` : 'N/A',
+    estimatedTime: d.time || 'N/A',
+    pickupCode: d.id,
+  }));
 
   const filteredDeliveries = mappedDeliveries.filter(delivery => {
     if (filter === 'all') return true;
@@ -39,7 +33,7 @@ const AvailableDeliveries = () => {
 
   const sortedDeliveries = [...filteredDeliveries].sort((a, b) => {
     if (sortBy === 'distance') {
-      return parseFloat(a.distance) - parseFloat(b.distance);
+      return (parseFloat(a.distance) || 0) - (parseFloat(b.distance) || 0);
     }
     if (sortBy === 'price') {
       return b.amount - a.amount;
@@ -47,9 +41,8 @@ const AvailableDeliveries = () => {
     return 0;
   });
 
-  const handleAcceptDelivery = (deliveryId) => {
-    acceptDelivery(deliveryId, 'Mike Smith');
-    // Navigate to courier deliveries page
+  const handleAcceptDelivery = async (deliveryId) => {
+    await acceptDelivery(deliveryId);
     navigate('/courier/deliveries');
   };
 
@@ -196,6 +189,12 @@ const AvailableDeliveries = () => {
           gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
           gap: '20px'
         }}>
+          {deliveriesLoading && (
+            <p style={{ color: 'var(--text-secondary)' }}>Loading deliveries...</p>
+          )}
+          {deliveriesError && (
+            <p style={{ color: '#ef4444' }}>{deliveriesError}</p>
+          )}
           {sortedDeliveries.map((delivery) => (
             <div key={delivery.id} className="delivery-card" style={{
               background: 'var(--card-background)',
