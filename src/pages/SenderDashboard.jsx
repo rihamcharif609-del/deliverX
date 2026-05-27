@@ -68,7 +68,7 @@ const SenderDashboard = ({ navigateTo }) => {
           <h3>My Recent Deliveries</h3>
           <button className="btn btn-outline" onClick={() => navigate('/sender/deliveries')}>View All</button>
         </div>
-        <SenderDeliveryTable showActions={false} />
+        <SenderDeliveryTable deliveries={deliveries} limit={2} showActions={false} />
       </div>
     </MainLayout>
   );

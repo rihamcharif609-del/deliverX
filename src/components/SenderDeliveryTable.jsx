@@ -3,7 +3,14 @@ import StatusBadge from './StatusBadge';
 import { useNavigate } from 'react-router-dom';
 import { FaCreditCard, FaChevronRight } from 'react-icons/fa';
 
-const SenderDeliveryTable = ({ deliveries = [], selectedFilter = 'All', searchQuery = '', onViewDetails, onPayClick }) => {
+const SenderDeliveryTable = ({
+  deliveries = [],
+  selectedFilter = 'All',
+  searchQuery = '',
+  onPayClick,
+  limit,
+  showActions = true,
+}) => {
 
   const filteredData = deliveries.filter((d) => {
     // Map custom filters to status keys
@@ -29,6 +36,8 @@ const SenderDeliveryTable = ({ deliveries = [], selectedFilter = 'All', searchQu
     return matchesFilter && matchesSearch;
   });
 
+  const visibleData = typeof limit === 'number' ? filteredData.slice(0, limit) : filteredData;
+  const columnCount = showActions ? 8 : 7;
   const navigate = useNavigate();
 
   return (
@@ -49,19 +58,21 @@ const SenderDeliveryTable = ({ deliveries = [], selectedFilter = 'All', searchQu
             <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600' }}>Date & Time</th>
             <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600' }}>Status</th>
             <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600' }}>Amount</th>
-            <th style={{ padding: '16px', textAlign: 'center', fontWeight: '600' }}>Actions</th>
+            {showActions && (
+              <th style={{ padding: '16px', textAlign: 'center', fontWeight: '600' }}>Actions</th>
+            )}
           </tr>
         </thead>
 
         <tbody>
-          {filteredData.length === 0 ? (
+          {visibleData.length === 0 ? (
             <tr>
-              <td colSpan="8" style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              <td colSpan={columnCount} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                 No deliveries found.
               </td>
             </tr>
           ) : (
-            filteredData.map((d) => (
+            visibleData.map((d) => (
               <tr key={d.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.2s' }}>
                 
                 {/* ID */}
@@ -113,37 +124,38 @@ const SenderDeliveryTable = ({ deliveries = [], selectedFilter = 'All', searchQu
                   {d.amount} MAD
                 </td>
 
-                {/* Actions */}
-                <td style={{ padding: '16px' }}>
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
-                    {d.status === 'accepted' && (
+                {showActions && (
+                  <td style={{ padding: '16px' }}>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
+                      {d.status === 'accepted' && (
+                        <button 
+                          className="btn btn-primary"
+                          onClick={() => onPayClick && onPayClick(d)}
+                          style={{ 
+                            padding: '6px 12px', 
+                            fontSize: '12px', 
+                            backgroundColor: '#ef4444', 
+                            borderColor: '#ef4444',
+                            color: '#fff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)'
+                          }}
+                        >
+                          <FaCreditCard size={12} /> Pay Now
+                        </button>
+                      )}
                       <button 
-                        className="btn btn-primary"
-                        onClick={() => onPayClick && onPayClick(d)}
-                        style={{ 
-                          padding: '6px 12px', 
-                          fontSize: '12px', 
-                          backgroundColor: '#ef4444', 
-                          borderColor: '#ef4444',
-                          color: '#fff',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)'
-                        }}
+                        className="btn btn-outline"
+                        onClick={() => navigate(`/sender/tracking/${d.id}`)}
+                        style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
                       >
-                        <FaCreditCard size={12} /> Pay Now
+                        Track <FaChevronRight size={10} />
                       </button>
-                    )}
-                    <button 
-                      className="btn btn-outline"
-                      onClick={() => navigate(`/sender/tracking/${d.id}`)}
-                      style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      Track <FaChevronRight size={10} />
-                    </button>
-                  </div>
-                </td>
+                    </div>
+                  </td>
+                )}
 
               </tr>
             ))
