@@ -9,10 +9,12 @@ import { useDelivery } from '../context/DeliveryContext';
 import PaymentModal from '../components/PaymentModal';
 import { FaCreditCard, FaLock, FaKey, FaBox, FaArrowLeft, FaMapMarkerAlt, FaCalendarAlt, FaEnvelope, FaPhoneAlt } from 'react-icons/fa';
 
+const ADMIN_SUPPORT_EMAIL = 'admin@deliverx.com';
+
 const Tracking = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { deliveries, rateCourier } = useDelivery();
+  const { deliveries, fetchDeliveries, rateCourier, cancelDelivery } = useDelivery();
   const [showChat, setShowChat] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const { darkMode } = useTheme();
@@ -30,8 +32,32 @@ const Tracking = () => {
     setRatingSubmitted(false);
   }, [id]);
 
-  // Find delivery in state
-  const delivery = deliveries.find(d => d.id === id) || deliveries[0];
+  React.useEffect(() => {
+    if (deliveries.length === 0) {
+      fetchDeliveries('sender').catch(() => {});
+    }
+  }, [deliveries.length, fetchDeliveries]);
+
+  const hasCourier = (item) => Boolean(item?.courier || item?.courierId);
+  const normalizedId = id ? String(id) : '';
+  const delivery = id
+    ? deliveries.find(d => String(d.id) === normalizedId || String(d.apiId) === normalizedId)
+    : deliveries.find(d => hasCourier(d) && d.status !== 'cancelled') || deliveries[0];
+
+  const courierName = delivery?.courier || 'Courier';
+  const courierPhone = delivery?.courierPhone || delivery?.phone || '+212 660-000000';
+  const courierEmail = delivery?.courierEmail || 'courier@deliverx.com';
+  const courierInitials = courierName
+    .split(' ')
+    .filter(Boolean)
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'C';
+  const acceptedAt = delivery?.acceptedAt
+    ? new Date(delivery.acceptedAt).toLocaleString()
+    : 'Accepted for this delivery';
+  const supportHref = `mailto:${ADMIN_SUPPORT_EMAIL}?subject=${encodeURIComponent(`Support request for ${delivery?.id || 'delivery'}`)}&body=${encodeURIComponent(`Hello Admin,\n\nI need help with delivery ${delivery?.id || ''}.`)}`;
 
   if (!delivery) {
     return (
@@ -47,10 +73,10 @@ const Tracking = () => {
     );
   }
 
-  const handleCancelDelivery = () => {
+  const handleCancelDelivery = async () => {
     if (window.confirm("Are you sure you want to cancel this delivery request?")) {
-      // Typically updates context, for now alert or update
-      alert("Delivery cancellation requested.");
+      await cancelDelivery(delivery.id);
+      alert("Delivery cancelled.");
     }
   };
 
@@ -220,7 +246,7 @@ const Tracking = () => {
           )}
 
           {/* SECURE DELIVERY CODE CARD (OTP) */}
-          {(delivery.status === 'paid' || delivery.status === 'picked-up' || delivery.status === 'in-transit') && (
+          {(delivery.status === 'paid' || delivery.status === 'picked-up' || delivery.status === 'in-transit') && delivery.otp && (
             <div className="card" style={{
               background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.02))',
               border: '1px solid rgba(16, 185, 129, 0.2)',
@@ -260,7 +286,7 @@ const Tracking = () => {
                 display: 'inline-block',
                 fontFamily: 'monospace'
               }}>
-                {delivery.otp || '4821'}
+                {delivery.otp}
               </div>
             </div>
           )}
@@ -512,30 +538,48 @@ const Tracking = () => {
                       fontSize: '22px',
                     }}
                   >
-                    {delivery.courier.split(' ').map(n => n[0]).join('')}
+                    {courierInitials}
                   </div>
 
                   <div>
-                    <h3>{delivery.courier}</h3>
+                    <h3>{courierName}</h3>
                     <p style={{ color: 'gray', fontSize: '13px', marginTop: '4px' }}>
-                      ⭐ {delivery.courierRating || '4.8'} (Morocco Active Courier)
+                      {delivery.courierRating || '4.8'} rating · Morocco active courier
                     </p>
                   </div>
                 </div>
 
                 <hr style={{ margin: '20px 0', borderColor: 'var(--border-color)' }} />
 
+                <div style={{ display: 'grid', gap: '12px', marginBottom: '18px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                    <FaCalendarAlt style={{ color: '#2563eb' }} />
+                    <span>Accepted: {acceptedAt}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                    <FaMapMarkerAlt style={{ color: '#10b981' }} />
+                    <span>{delivery.pickup || delivery.from} to {delivery.destination || delivery.to}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                    <FaEnvelope style={{ color: '#f59e0b' }} />
+                    <span>{courierEmail}</span>
+                  </div>
+                </div>
+
                 <button
                   className="btn btn-outline"
+                  onClick={() => { window.location.href = `tel:${courierPhone}`; }}
                   style={{
                     width: '100%',
                     marginBottom: '10px',
-                    borderRadius: '10px'
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
                   }}
                 >
-                  <a href={`tel:${delivery.courierPhone || delivery.phone}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    📞 {delivery.courierPhone || delivery.phone || '+212 660-000000'}
-                  </a>
+                  <FaPhoneAlt size={12} /> {courierPhone}
                 </button>
                 <button 
                   className="btn btn-outline" 
@@ -543,10 +587,14 @@ const Tracking = () => {
                   style={{
                     width: '100%',
                     marginBottom: '10px',
-                    borderRadius: '10px'
+                    borderRadius: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
                   }}
                 >
-                  ✉️ {t('messageCourier') || 'Message Courier'}
+                  <FaEnvelope size={12} /> {t('messageCourier') || 'Message Courier'}
                 </button>
               </>
             ) : (
@@ -672,15 +720,18 @@ const Tracking = () => {
 
             <button
               className="btn btn-outline"
+              onClick={() => { window.location.href = supportHref; }}
               style={{
                 width: '100%',
                 marginBottom: '10px',
-                borderRadius: '10px'
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
               }}
             >
-              <a href="mailto:support@deliverx.ma" style={{ textDecoration: 'none', color: 'inherit' }}>
-                ✉️ {t('contactSupport') || 'Contact Support'}
-              </a>
+              <FaEnvelope size={12} /> {t('contactSupport') || 'Contact Support'}
             </button>
 
             {delivery.status !== 'cancelled' && delivery.status !== 'delivered' && (

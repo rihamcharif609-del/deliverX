@@ -14,6 +14,7 @@ const PaymentModal = ({ isOpen, onClose, delivery }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [generatedOtp, setGeneratedOtp] = useState('');
 
   if (!isOpen || !delivery) return null;
 
@@ -54,7 +55,7 @@ const PaymentModal = ({ isOpen, onClose, delivery }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (cardNumber.replace(/\s/g, '').length < 16) {
       setErrorMsg('Card number must be 16 digits.');
@@ -73,16 +74,23 @@ const PaymentModal = ({ isOpen, onClose, delivery }) => {
     setIsSubmitting(true);
 
     // Simulate CMI payment gateway processing
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setPaymentSuccess(true);
-      payDelivery(delivery.id, cardHolder);
+    setTimeout(async () => {
+      try {
+        const paidDelivery = await payDelivery(delivery.id, cardHolder);
+        setIsSubmitting(false);
+        setGeneratedOtp(paidDelivery.otp || '');
+        setPaymentSuccess(true);
 
-      // Close modal after showing success animation
-      setTimeout(() => {
-        setPaymentSuccess(false);
-        onClose();
-      }, 2500);
+        // Close modal after showing success animation
+        setTimeout(() => {
+          setPaymentSuccess(false);
+          setGeneratedOtp('');
+          onClose();
+        }, 2500);
+      } catch (err) {
+        setIsSubmitting(false);
+        setErrorMsg(err.response?.data?.message || 'Payment could not be saved. Please try again.');
+      }
     }, 2000);
   };
 
@@ -113,7 +121,7 @@ const PaymentModal = ({ isOpen, onClose, delivery }) => {
             <div className="otp-display-box">
               <span className="otp-label">Secure Delivery Code (OTP):</span>
               <span className="otp-code-highlight">
-                {Math.floor(1000 + Math.random() * 9000) /* Temporary display, synced to localstorage */}
+                {generatedOtp}
               </span>
               <p className="otp-hint">Provide this 4-digit code to the courier to confirm delivery.</p>
             </div>

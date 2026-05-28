@@ -19,8 +19,11 @@ const CourierProfile = () => {
     profile,
     documents,
     verificationStatus,
+    verificationLoading,
+    verificationError,
+    completion,
     canEditDocuments,
-    allDocumentsUploaded,
+    profileComplete,
     updateProfile,
     uploadDocument,
     submitForVerification,
@@ -37,6 +40,12 @@ const CourierProfile = () => {
   const fileInputRefs = useRef({});
   const photoInputRef = useRef(null);
 
+  React.useEffect(() => {
+    if (!isEditing) {
+      setFormData({ ...profile });
+    }
+  }, [isEditing, profile]);
+
   const handlePhotoUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -46,43 +55,37 @@ const CourierProfile = () => {
     }
     const reader = new FileReader();
     reader.onload = () => {
-      updateProfile({ photo: reader.result });
-      addNotification({
-        type: 'status_update',
-        targetRole: 'courier',
-        text: 'Profile Photo Updated',
-        description: 'Your profile photo was successfully updated.',
-        time: 'Just now',
-        path: '/courier/profile'
-      });
+      updateProfile({ photo: reader.result })
+        .then(() => {
+          addNotification({
+            type: 'status_update',
+            targetRole: 'courier',
+            text: 'Profile Photo Updated',
+            description: 'Your profile photo was successfully updated.',
+            time: 'Just now',
+            path: '/courier/profile'
+          });
+        })
+        .catch(() => {
+          alert('Could not update profile photo.');
+        });
     };
     reader.readAsDataURL(file);
   };
-
-  const calculateCompletion = () => {
-    let completed = 0;
-    const total = 8;
-    if (profile.phone) completed++;
-    if (profile.address) completed++;
-    if (profile.vehicleType) completed++;
-    if (profile.vehicleNumber) completed++;
-    if (profile.cinNumber) completed++;
-    if (profile.driverLicense) completed++;
-    if (allDocumentsUploaded()) completed++;
-    if (profile.photo) completed++;
-    return Math.round((completed / total) * 100);
-  };
-
-  const completion = calculateCompletion();
 
   const handleEdit = () => {
     setFormData({ ...profile });
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    updateProfile(formData);
-    setIsEditing(false);
+  const handleSave = async () => {
+    setSubmitMessage('');
+    try {
+      await updateProfile(formData);
+      setIsEditing(false);
+    } catch (err) {
+      setSubmitMessage(err.response?.data?.message || 'Could not save profile.');
+    }
   };
 
   const handleCancel = () => {
@@ -111,16 +114,16 @@ const CourierProfile = () => {
     e.target.value = '';
   };
 
-  const handleSubmitVerification = () => {
+  const handleSubmitVerification = async () => {
     setSubmitMessage('');
-    const result = submitForVerification();
+    const result = await submitForVerification();
     if (result.success) {
       setSubmitMessage(result.message);
       addNotification({
         type: 'courier_request',
         targetRole: 'admin',
         text: 'New Courier Verification Request',
-        description: `${profile.name} submitted CIN, license, and vehicle documents for review.`,
+        description: `${profile.name} completed their courier profile and submitted documents for review.`,
         time: 'Just now',
         path: '/admin/courier-verification',
         details: {
@@ -244,6 +247,9 @@ const CourierProfile = () => {
           <div className="progress-bar-container">
             <div className="progress-bar-fill" style={{ width: `${completion}%` }} />
           </div>
+          {verificationError && (
+            <p style={{ color: '#ef4444', fontSize: '13px', marginTop: '10px' }}>{verificationError}</p>
+          )}
         </div>
 
         <div className="profile-section">
@@ -289,6 +295,7 @@ const CourierProfile = () => {
               <label>Vehicle Type</label>
               {isEditing ? (
                 <select name="vehicleType" value={formData.vehicleType} onChange={handleChange}>
+                  <option value="">Select vehicle type</option>
                   <option value="Motorcycle">Motorcycle</option>
                   <option value="Car">Car</option>
                   <option value="Scooter">Scooter</option>
@@ -407,13 +414,13 @@ const CourierProfile = () => {
                 type="button"
                 className="btn btn-primary"
                 onClick={handleSubmitVerification}
-                disabled={!allDocumentsUploaded()}
+                disabled={!profileComplete() || verificationLoading}
               >
-                Submit Documents for Verification
+                {verificationLoading ? 'Submitting...' : 'Submit Profile for Verification'}
               </button>
-              {!allDocumentsUploaded() && (
+              {!profileComplete() && (
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px', textAlign: 'center' }}>
-                  Upload all 3 documents to enable submit
+                  Fill every profile field and upload all 3 documents to reach 100%.
                 </p>
               )}
               {submitMessage && (

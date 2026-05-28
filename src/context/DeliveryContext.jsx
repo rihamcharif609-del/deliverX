@@ -90,15 +90,25 @@ const mapDeliveryFromApi = (delivery) => {
     weight: delivery.package_weight ? `${delivery.package_weight} kg` : 'N/A',
     courier: delivery.courier?.name || null,
     courierPhone: delivery.courier?.phone || '',
+    courierEmail: delivery.courier?.email || '',
     amount,
     total: amount,
     commission,
     netAmount: amount - commission,
     status: delivery.status,
     paymentStatus: delivery.payment_status === 'unpaid' ? 'pending' : delivery.payment_status,
+    otp: delivery.delivery_otp || null,
+    paidAt: delivery.paid_at,
+    paymentDetails: delivery.payment_card_holder
+      ? {
+          cardHolder: delivery.payment_card_holder,
+          paidAt: delivery.paid_at ? new Date(delivery.paid_at).toLocaleString() : '',
+        }
+      : null,
     date: delivery.delivery_date || delivery.created_at?.slice(0, 10) || '',
     time: delivery.delivery_time || '',
     instructions: delivery.notes || delivery.package_description || '',
+    acceptedAt: delivery.accepted_at,
     createdAt: delivery.created_at,
   };
 };
@@ -319,28 +329,19 @@ export const DeliveryProvider = ({ children }) => {
   };
 
   // 3. Process payment (Sender)
-  const payDelivery = (deliveryId, cardName) => {
-    let targetAmount = 0;
-    let targetCommission = 0;
-    const code = Math.floor(1000 + Math.random() * 9000).toString(); // Generate 4-digit OTP
+  const payDelivery = async (deliveryId, cardName) => {
+    const target = deliveries.find((delivery) => delivery.id === deliveryId);
+    const apiId = target?.apiId || deliveryId;
+    const { data } = await axios.post(`${API_BASE_URL}/sender/deliveries/${apiId}/pay`, {
+      card_holder: cardName,
+    });
+    const paidDelivery = mapDeliveryFromApi(data.data);
+    const targetAmount = paidDelivery.amount;
+    const targetCommission = paidDelivery.commission;
 
-    setDeliveries(prev => prev.map(d => {
-      if (d.id === deliveryId) {
-        targetAmount = d.amount;
-        targetCommission = d.commission;
-        return {
-          ...d,
-          status: 'paid',
-          paymentStatus: 'held',
-          otp: code,
-          paymentDetails: {
-            cardHolder: cardName,
-            paidAt: new Date().toLocaleString()
-          }
-        };
-      }
-      return d;
-    }));
+    setDeliveries(prev => prev.map(d => (
+      d.id === deliveryId ? { ...d, ...paidDelivery } : d
+    )));
 
     // Hold payment in Admin Analytics and Courier Pending Earnings
     setAdminAnalytics(prev => ({
@@ -358,7 +359,7 @@ export const DeliveryProvider = ({ children }) => {
       targetRole: 'sender',
       targetUserId: userId,
       text: `Payment Confirmed`,
-      description: `You paid ${targetAmount} MAD for ${deliveryId}. Your OTP code is ${code} — share it with the courier upon delivery.`,
+      description: `You paid ${targetAmount} MAD for ${deliveryId}. Your OTP code is ${paidDelivery.otp} - share it with the courier upon delivery.`,
       time: 'Just now',
       path: `/sender/tracking/${deliveryId}`,
       deliveryId: deliveryId
@@ -367,7 +368,7 @@ export const DeliveryProvider = ({ children }) => {
     addNotification({
       type: 'courier_notify_paid',
       targetRole: 'courier',
-      targetUserId: deliveries.find((delivery) => delivery.id === deliveryId)?.courierId,
+      targetUserId: paidDelivery.courierId,
       text: `Order ${deliveryId} Paid!`,
       description: `Sender completed online payment. You can now start pickup.`,
       time: 'Just now',
@@ -384,21 +385,22 @@ export const DeliveryProvider = ({ children }) => {
       path: '/admin',
       deliveryId: deliveryId
     });
+
+    return paidDelivery;
   };
 
   // 4. Update delivery state (Courier: picked-up, in-transit)
-  const updateDeliveryState = (deliveryId, nextStatus) => {
+  const updateDeliveryState = async (deliveryId, nextStatus) => {
     const target = deliveries.find((delivery) => delivery.id === deliveryId);
+    const apiId = target?.apiId || deliveryId;
+    const { data } = await axios.patch(`${API_BASE_URL}/courier/deliveries/${apiId}/status`, {
+      status: nextStatus,
+    });
+    const updatedDelivery = mapDeliveryFromApi(data.data);
 
-    setDeliveries(prev => prev.map(d => {
-      if (d.id === deliveryId) {
-        return {
-          ...d,
-          status: nextStatus
-        };
-      }
-      return d;
-    }));
+    setDeliveries(prev => prev.map(d => (
+      d.id === deliveryId ? { ...d, ...updatedDelivery } : d
+    )));
 
     // Add status timeline notifications
     addNotification({
@@ -413,30 +415,56 @@ export const DeliveryProvider = ({ children }) => {
     });
   };
 
-  // 5. Confirm Delivery via OTP (Courier + automatic payout release)
-  const confirmDeliveryOTP = (deliveryId, enteredOtp) => {
-    let success = false;
-    let targetAmount = 0;
-    let targetCommission = 0;
+  const cancelDelivery = async (deliveryId) => {
+    const target = deliveries.find((delivery) => delivery.id === deliveryId);
+    const apiId = target?.apiId || deliveryId;
 
-    const updated = deliveries.map(d => {
-      if (d.id === deliveryId) {
-        if (d.otp === enteredOtp) {
-          success = true;
-          targetAmount = d.amount;
-          targetCommission = d.commission;
-          return {
-            ...d,
-            status: 'delivered',
-            paymentStatus: 'released'
-          };
-        }
-      }
-      return d;
+    setDeliveries(prev => prev.map(d => (
+      d.id === deliveryId
+        ? { ...d, status: 'cancelled' }
+        : d
+    )));
+
+    try {
+      const { data } = await axios.patch(`${API_BASE_URL}/sender/deliveries/${apiId}`, {
+        status: 'cancelled',
+      });
+      const cancelledDelivery = mapDeliveryFromApi(data.data);
+
+      setDeliveries(prev => prev.map(d => (
+        d.id === deliveryId ? { ...d, ...cancelledDelivery } : d
+      )));
+    } catch (err) {
+      console.warn('Could not persist cancellation to backend, keeping local state.', err);
+    }
+
+    addNotification({
+      type: 'delivery_refunded',
+      targetRole: 'admin',
+      text: `Delivery Cancelled`,
+      description: `Sender cancelled delivery ${deliveryId}.`,
+      time: 'Just now',
+      path: '/admin/deliveries',
+      deliveryId,
     });
+  };
 
-    if (success) {
-      setDeliveries(updated);
+  // 5. Confirm Delivery via OTP (Courier + automatic payout release)
+  const confirmDeliveryOTP = async (deliveryId, enteredOtp) => {
+    const target = deliveries.find((delivery) => delivery.id === deliveryId);
+    const apiId = target?.apiId || deliveryId;
+
+    try {
+      const { data } = await axios.post(`${API_BASE_URL}/courier/deliveries/${apiId}/confirm-otp`, {
+        otp: enteredOtp,
+      });
+      const confirmedDelivery = mapDeliveryFromApi(data.data);
+      const targetAmount = confirmedDelivery.amount;
+      const targetCommission = confirmedDelivery.commission;
+
+      setDeliveries(prev => prev.map(d => (
+        d.id === deliveryId ? { ...d, ...confirmedDelivery } : d
+      )));
 
       // Release money in Admin Analytics & Courier Earnings
       const courierEarn = targetAmount - targetCommission;
@@ -460,7 +488,7 @@ export const DeliveryProvider = ({ children }) => {
       addNotification({
         type: 'delivery_completed',
         targetRole: 'sender',
-        targetUserId: updated.find((delivery) => delivery.id === deliveryId)?.senderId,
+        targetUserId: confirmedDelivery.senderId,
         text: `Delivery Completed!`,
         description: `Order ${deliveryId} delivered. Funds released. Thank you!`,
         time: 'Just now',
@@ -490,8 +518,11 @@ export const DeliveryProvider = ({ children }) => {
       });
 
       return { success: true, message: 'Delivery confirmed and payout released successfully!' };
-    } else {
-      return { success: false, message: 'Invalid OTP code! Please try again.' };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || 'Invalid OTP code! Please try again.'
+      };
     }
   };
 
@@ -677,6 +708,7 @@ export const DeliveryProvider = ({ children }) => {
       acceptDelivery,
       payDelivery,
       updateDeliveryState,
+      cancelDelivery,
       confirmDeliveryOTP,
       requestWithdrawal,
       refundDelivery,

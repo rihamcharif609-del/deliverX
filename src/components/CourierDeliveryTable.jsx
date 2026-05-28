@@ -46,7 +46,7 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
     setShowOtpModal(true);
   };
 
-  const handleVerifyOtp = (e) => {
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
     if (otpCode.length !== 4) {
       setOtpError('Delivery code must be exactly 4 digits.');
@@ -56,9 +56,9 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
     setOtpError('');
     setIsVerifying(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
+      const res = await confirmDeliveryOTP(otpTargetId, otpCode);
       setIsVerifying(false);
-      const res = confirmDeliveryOTP(otpTargetId, otpCode);
       if (res && res.success) {
         setOtpSuccess(true);
         setTimeout(() => {
@@ -71,6 +71,14 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
         setOtpError(res?.message || 'Invalid delivery code! Please ask the sender for the code.');
       }
     }, 1200);
+  };
+
+  const handleUpdateState = async (deliveryId, nextStatus) => {
+    try {
+      await updateDeliveryState(deliveryId, nextStatus);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Could not update delivery status.');
+    }
   };
 
   return (
@@ -172,7 +180,7 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
                     {d.status === 'paid' && (
                       <button 
                         className="btn btn-primary"
-                        onClick={() => updateDeliveryState(d.id, 'picked-up')}
+                        onClick={() => handleUpdateState(d.id, 'picked-up')}
                         style={{
                           backgroundColor: '#2563eb',
                           color: '#fff',
@@ -194,7 +202,7 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
                     {d.status === 'picked-up' && (
                       <button 
                         className="btn btn-primary"
-                        onClick={() => updateDeliveryState(d.id, 'in-transit')}
+                        onClick={() => handleUpdateState(d.id, 'in-transit')}
                         style={{
                           backgroundColor: '#eab308',
                           color: '#000',

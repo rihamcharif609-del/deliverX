@@ -11,21 +11,35 @@ const DOC_LABELS = {
 
 const AdminCourierVerification = ({ setUserRole }) => {
   const {
-    verification,
-    profile,
-    documents,
-    verificationStatus,
+    adminVerifications,
+    verificationLoading,
+    verificationError,
+    fetchAdminVerifications,
     approveVerification,
     rejectVerification,
   } = useCourierVerification();
   const { addNotification } = useDelivery();
   const [rejectReason, setRejectReason] = useState('');
   const [previewDoc, setPreviewDoc] = useState(null);
+  const [selectedCourierId, setSelectedCourierId] = useState(null);
+
+  React.useEffect(() => {
+    fetchAdminVerifications().then((rows) => {
+      setSelectedCourierId((current) => current || rows[0]?.id || null);
+    }).catch(() => {});
+  }, [fetchAdminVerifications]);
+
+  const selected = adminVerifications.find((item) => item.id === selectedCourierId) || adminVerifications[0];
+  const verification = selected || {};
+  const profile = selected?.profile || {};
+  const documents = selected?.documents || {};
+  const verificationStatus = selected?.status || 'draft';
 
   const notifyCourier = (type, text, description) => {
     addNotification({
       type,
       targetRole: 'courier',
+      targetUserId: selected?.id,
       text,
       description,
       time: 'Just now',
@@ -34,7 +48,8 @@ const AdminCourierVerification = ({ setUserRole }) => {
   };
 
   const handleApprove = () => {
-    approveVerification();
+    if (!selected?.id) return;
+    approveVerification(selected.id);
     notifyCourier(
       'courier_request',
       'Account Approved',
@@ -43,8 +58,9 @@ const AdminCourierVerification = ({ setUserRole }) => {
   };
 
   const handleReject = () => {
+    if (!selected?.id) return;
     const reason = rejectReason.trim() || 'Documents do not meet requirements.';
-    rejectVerification(reason);
+    rejectVerification(selected.id, reason);
     notifyCourier(
       'courier_notify_refunded',
       'Verification Rejected',
@@ -53,10 +69,7 @@ const AdminCourierVerification = ({ setUserRole }) => {
     setRejectReason('');
   };
 
-  const hasSubmission =
-    verificationStatus === 'pending' ||
-    verificationStatus === 'approved' ||
-    verificationStatus === 'rejected';
+  const hasSubmission = Boolean(selected);
 
   return (
     <MainLayout userRole="admin" activePage="courier-verification" setUserRole={setUserRole}>
@@ -67,6 +80,36 @@ const AdminCourierVerification = ({ setUserRole }) => {
         </p>
       </div>
 
+      {verificationError && (
+        <div className="card" style={{ marginBottom: '16px', borderLeft: '4px solid #ef4444' }}>
+          <p style={{ margin: 0, color: '#ef4444' }}>{verificationError}</p>
+        </div>
+      )}
+
+      {adminVerifications.length > 1 && (
+        <div className="card" style={{ marginBottom: '16px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+            Courier request
+          </label>
+          <select
+            className="form-control"
+            value={selected?.id || ''}
+            onChange={(e) => setSelectedCourierId(Number(e.target.value))}
+          >
+            {adminVerifications.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.profile.name} - {item.status}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {verificationLoading && !selected ? (
+        <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
+          <p style={{ color: 'var(--text-secondary)' }}>Loading courier requests...</p>
+        </div>
+      ) : selected && (
       <div className="card" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
@@ -93,6 +136,7 @@ const AdminCourierVerification = ({ setUserRole }) => {
           </p>
         )}
       </div>
+      )}
 
       {!hasSubmission ? (
         <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
