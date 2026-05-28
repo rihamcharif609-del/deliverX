@@ -1,27 +1,61 @@
 import { useLanguage } from '../context/LanguageContext';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
 import MainLayout from '../layouts/MainLayout';
 import { useAuth } from '../context/AuthContext';
-import { getAccountStorageKey, readStoredJson, writeStoredJson } from '../utils/accountStorage';
+
+const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 const AdminProfile = ({ navigateTo, onProfileClick }) => {
   const { t } = useLanguage();
-  const { user } = useAuth();
-  const storageKey = useMemo(() => getAccountStorageKey('adminProfile', user), [user]);
-  const defaultProfile = useMemo(() => ({
+  const { user, updateProfile } = useAuth();
+  const profileData = useMemo(() => ({
     name: user?.name || 'Admin',
     email: user?.email || 'admin@deliverx.com',
-    phone: user?.phone || '+212 600-000000',
+    phone: user?.phone || '',
+    photo: user?.profile_photo || null,
     role: 'Administrator',
-    joinedDate: user?.created_at?.slice(0, 10) || 'Today',
+    joinedDate: user?.created_at?.slice(0, 10) || '',
     avatar: (user?.name || 'Admin').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
-    photo: null
   }), [user]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState(() => ({ ...defaultProfile, ...readStoredJson(storageKey, {}) }));
 
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ ...profileData });
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalDeliveries: 0,
+    activeCouriers: 0,
+    totalRevenue: 0,
+  });
+  const [statsError, setStatsError] = useState('');
   const fileInputRef = React.useRef(null);
+
+  useEffect(() => {
+    setFormData({ ...profileData });
+  }, [profileData]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setStatsError('');
+
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/admin/dashboard`);
+        const rows = data.data || {};
+        setStats({
+          totalUsers: Number(rows.total_users || 0),
+          totalDeliveries: Number(rows.total_deliveries || 0),
+          activeCouriers: Number(rows.active_couriers || 0),
+          totalRevenue: Number(rows.total_revenue || 0),
+        });
+      } catch (err) {
+        setStatsError(err.response?.data?.message || 'Could not load admin statistics.');
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files?.[0];
@@ -31,35 +65,49 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => {
-      const updated = { ...profileData, photo: reader.result };
-      setProfileData(updated);
-      writeStoredJson(storageKey, updated);
+    reader.onload = async () => {
+      try {
+        await updateProfile({
+          name: profileData.name,
+          email: profileData.email,
+          phone: profileData.phone,
+          profile_photo: reader.result,
+        });
+      } catch (err) {
+        alert(err.response?.data?.message || 'Could not update profile photo.');
+      }
     };
     reader.readAsDataURL(file);
   };
 
-  const stats = {
-    totalUsers: 1234,
-    totalDeliveries: 5678,
-    activeCouriers: 156,
-    totalRevenue: 45678
-  };
-
   const handleEdit = () => {
     setFormData({ ...profileData });
+    setSaveError('');
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    const updated = { ...formData };
-    setProfileData(updated);
-    writeStoredJson(storageKey, updated);
-    setIsEditing(false);
+  const handleSave = async () => {
+    setSaveError('');
+    setIsSaving(true);
+
+    try {
+      await updateProfile({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        profile_photo: profileData.photo,
+      });
+      setIsEditing(false);
+    } catch (err) {
+      setSaveError(err.response?.data?.message || 'Could not save profile changes.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
     setFormData({ ...profileData });
+    setSaveError('');
     setIsEditing(false);
   };
 
@@ -81,12 +129,12 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
             ref={fileInputRef}
             onChange={handlePhotoUpload}
           />
-          <div 
-            className="profile-avatar-large" 
+          <div
+            className="profile-avatar-large"
             onClick={() => fileInputRef.current?.click()}
-            style={{ 
-              cursor: 'pointer', 
-              position: 'relative', 
+            style={{
+              cursor: 'pointer',
+              position: 'relative',
               overflow: 'hidden',
               display: 'flex',
               alignItems: 'center',
@@ -117,9 +165,13 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
           <h1 className="profile-name">{isEditing ? formData.name : profileData.name}</h1>
           <div className="profile-role">{profileData.role}</div>
           <div className="verification-badge approved">
-            ✅ Verified Account
+            Verified Account
           </div>
         </div>
+
+        {statsError && (
+          <p style={{ color: '#ef4444', marginBottom: '16px' }}>{statsError}</p>
+        )}
 
         <div className="profile-stats-grid">
           <div className="profile-stat-card">
@@ -131,11 +183,11 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
             <div className="profile-stat-label">Total Deliveries</div>
           </div>
           <div className="profile-stat-card">
-            <div className="profile-stat-value">{stats.activeCouriers}</div>
+            <div className="profile-stat-value">{stats.activeCouriers.toLocaleString()}</div>
             <div className="profile-stat-label">Active Couriers</div>
           </div>
           <div className="profile-stat-card">
-            <div className="profile-stat-value">${stats.totalRevenue.toLocaleString()}</div>
+            <div className="profile-stat-value">{stats.totalRevenue.toFixed(2)} MAD</div>
             <div className="profile-stat-label">Total Revenue</div>
           </div>
         </div>
@@ -149,6 +201,12 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
               </button>
             )}
           </div>
+
+          {saveError && (
+            <div style={{ color: '#ef4444', fontSize: '13px', marginBottom: '14px' }}>
+              {saveError}
+            </div>
+          )}
 
           <div className="profile-form-grid">
             <div className="profile-field">
@@ -187,9 +245,10 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
+                  placeholder="+212 600-000000"
                 />
               ) : (
-                <input type="tel" value={profileData.phone} disabled />
+                <input type="tel" value={profileData.phone} placeholder="Not added yet" disabled />
               )}
             </div>
 
@@ -206,11 +265,11 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
 
           {isEditing && (
             <div className="profile-actions">
-              <button className="btn btn-outline" onClick={handleCancel}>
+              <button className="btn btn-outline" onClick={handleCancel} disabled={isSaving}>
                 Cancel
               </button>
-              <button className="btn btn-primary" onClick={handleSave}>
-                {t('saveChanges')}
+              <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? 'Saving...' : t('saveChanges')}
               </button>
             </div>
           )}

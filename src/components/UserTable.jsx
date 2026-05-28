@@ -1,4 +1,5 @@
 import React from 'react';
+import { FaEye } from 'react-icons/fa';
 
 const UserTable = ({
   users = [],
@@ -44,7 +45,13 @@ const UserTable = ({
         </thead>
 
         <tbody>
-          {users.map((user) => (
+          {users.length === 0 ? (
+            <tr>
+              <td colSpan={showActions ? 7 : 6} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-secondary)' }}>
+                No users found.
+              </td>
+            </tr>
+          ) : users.map((user) => (
             <tr key={user.id}>
 
               <td>
@@ -74,23 +81,13 @@ const UserTable = ({
               {showActions && (
                 <td>
                   <div className="action-buttons">
-
                     <button
                       className="action-btn view"
                       title="View"
                       onClick={() => onViewUser(user)}
                     >
-                      👁️
+                      <FaEye />
                     </button>
-
-                    <button className="action-btn edit">
-                      ✏️
-                    </button>
-
-                    <button className="action-btn disable">
-                      🔒
-                    </button>
-
                   </div>
                 </td>
               )}

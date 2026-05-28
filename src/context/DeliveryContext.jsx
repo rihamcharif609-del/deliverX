@@ -102,6 +102,7 @@ const mapDeliveryFromApi = (delivery) => {
     paymentDetails: delivery.payment_card_holder
       ? {
           cardHolder: delivery.payment_card_holder,
+          reference: delivery.payment?.transaction_reference || '',
           paidAt: delivery.paid_at ? new Date(delivery.paid_at).toLocaleString() : '',
         }
       : null,

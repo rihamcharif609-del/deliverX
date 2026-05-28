@@ -1,27 +1,42 @@
 import { useLanguage } from '../context/LanguageContext';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import MainLayout from '../layouts/MainLayout';
 import { useAuth } from '../context/AuthContext';
-import { getAccountStorageKey, readStoredJson, writeStoredJson } from '../utils/accountStorage';
+import { useDelivery } from '../context/DeliveryContext';
+import StatusBadge from '../components/StatusBadge';
 
 const SenderProfile = ({ navigateTo, onProfileClick }) => {
   const { t } = useLanguage();
-  const { user } = useAuth();
-  const storageKey = useMemo(() => getAccountStorageKey('senderProfile', user), [user]);
-  const defaultProfile = useMemo(() => ({
+  const { user, updateProfile } = useAuth();
+  const { deliveries, deliveriesLoading, deliveriesError, fetchDeliveries } = useDelivery();
+  const profileData = useMemo(() => ({
     name: user?.name || 'Sender',
     email: user?.email || 'sender@deliverx.com',
-    phone: user?.phone || '+212 600-000000',
+    phone: user?.phone || '',
+    photo: user?.profile_photo || null,
     avatar: (user?.name || 'Sender').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
-    totalDeliveries: 0,
-    totalSpent: 0,
-    photo: null
   }), [user]);
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState(() => ({ ...defaultProfile, ...readStoredJson(storageKey, {}) }));
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState({ ...profileData });
   const fileInputRef = React.useRef(null);
+
+  useEffect(() => {
+    fetchDeliveries('sender').catch(() => {});
+  }, [fetchDeliveries]);
+
+  useEffect(() => {
+    setFormData({ ...profileData });
+  }, [profileData]);
+
+  const paidStatuses = new Set(['held', 'released', 'paid']);
+  const totalDeliveries = deliveries.length;
+  const totalSpent = deliveries.reduce((sum, delivery) => (
+    paidStatuses.has(delivery.paymentStatus) ? sum + Number(delivery.amount || 0) : sum
+  ), 0);
+  const deliveredHistory = deliveries.filter((delivery) => delivery.status === 'delivered');
 
   const handlePhotoUpload = (e) => {
     const file = e.target.files?.[0];
@@ -31,31 +46,44 @@ const SenderProfile = ({ navigateTo, onProfileClick }) => {
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => {
-      const updated = { ...profileData, photo: reader.result };
-      setProfileData(updated);
-      writeStoredJson(storageKey, updated);
+    reader.onload = async () => {
+      try {
+        await updateProfile({
+          name: profileData.name,
+          email: profileData.email,
+          phone: profileData.phone,
+          profile_photo: reader.result,
+        });
+      } catch (err) {
+        alert(err.response?.data?.message || 'Could not update profile photo.');
+      }
     };
     reader.readAsDataURL(file);
   };
 
-  const deliveryHistory = [
-    { id: 'DEL001', date: '2024-03-10', status: 'delivered', amount: 45.99, to: 'Alice Johnson' },
-    { id: 'DEL002', date: '2024-03-08', status: 'delivered', amount: 78.50, to: 'Bob Smith' },
-    { id: 'DEL003', date: '2024-03-05', status: 'delivered', amount: 120.00, to: 'Carol Davis' },
-    { id: 'DEL004', date: '2024-03-01', status: 'delivered', amount: 32.75, to: 'David Wilson' }
-  ];
-
   const handleEdit = () => {
     setFormData({ ...profileData });
+    setSaveError('');
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    const updated = { ...formData };
-    setProfileData(updated);
-    writeStoredJson(storageKey, updated);
-    setIsEditing(false);
+  const handleSave = async () => {
+    setSaveError('');
+    setIsSaving(true);
+
+    try {
+      await updateProfile({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        profile_photo: profileData.photo,
+      });
+      setIsEditing(false);
+    } catch (err) {
+      setSaveError(err.response?.data?.message || 'Could not save profile changes.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -120,11 +148,11 @@ const SenderProfile = ({ navigateTo, onProfileClick }) => {
 
         <div className="profile-stats-grid">
           <div className="profile-stat-card">
-            <div className="profile-stat-value">{profileData.totalDeliveries}</div>
+            <div className="profile-stat-value">{totalDeliveries}</div>
             <div className="profile-stat-label">Total Deliveries</div>
           </div>
           <div className="profile-stat-card">
-            <div className="profile-stat-value">${profileData.totalSpent.toFixed(2)}</div>
+            <div className="profile-stat-value">{totalSpent.toFixed(2)} MAD</div>
             <div className="profile-stat-label">Total Spent</div>
           </div>
         </div>
@@ -138,6 +166,12 @@ const SenderProfile = ({ navigateTo, onProfileClick }) => {
               </button>
             )}
           </div>
+
+          {saveError && (
+            <div style={{ color: '#ef4444', fontSize: '13px', marginBottom: '14px' }}>
+              {saveError}
+            </div>
+          )}
 
           <div className="profile-form-grid">
             <div className="profile-field">
@@ -176,9 +210,10 @@ const SenderProfile = ({ navigateTo, onProfileClick }) => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
+                  placeholder="+212 600-000000"
                 />
               ) : (
-                <input type="tel" value={profileData.phone} disabled />
+                <input type="tel" value={profileData.phone || ''} placeholder="Not added yet" disabled />
               )}
             </div>
           </div>
@@ -188,8 +223,8 @@ const SenderProfile = ({ navigateTo, onProfileClick }) => {
               <button className="btn btn-outline" onClick={handleCancel}>
                 Cancel
               </button>
-              <button className="btn btn-primary" onClick={handleSave}>
-                {t('saveChanges')}
+              <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? 'Saving...' : t('saveChanges')}
               </button>
             </div>
           )}
@@ -200,21 +235,44 @@ const SenderProfile = ({ navigateTo, onProfileClick }) => {
             <span>Delivery History</span>
           </div>
           
-          {deliveryHistory.map((delivery) => (
-            <div key={delivery.id} className="history-item">
-              <div>
-                <div className="history-id">{delivery.id}</div>
-                <div className="history-date">{delivery.date}</div>
-              </div>
-              <div>To: {delivery.to}</div>
-              <div className="history-amount">${delivery.amount.toFixed(2)}</div>
-              <div>
-                <span className={`status-badge ${delivery.status}`}>
-                  {delivery.status.charAt(0).toUpperCase() + delivery.status.slice(1)}
-                </span>
-              </div>
+          {deliveriesLoading && (
+            <p style={{ color: 'var(--text-secondary)' }}>Loading delivery history...</p>
+          )}
+          {deliveriesError && (
+            <p style={{ color: '#ef4444' }}>{deliveriesError}</p>
+          )}
+          {!deliveriesLoading && deliveredHistory.length === 0 ? (
+            <p style={{ color: 'var(--text-secondary)' }}>No delivered packages yet.</p>
+          ) : (
+            <div className="table-container" style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Delivery ID</th>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Date</th>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Destination</th>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Amount</th>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deliveredHistory.map((delivery) => (
+                    <tr key={delivery.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <td style={{ padding: '12px', fontWeight: '700' }}>{delivery.id}</td>
+                      <td style={{ padding: '12px' }}>{delivery.date || delivery.createdAt?.slice(0, 10)}</td>
+                      <td style={{ padding: '12px' }}>{delivery.destination || delivery.to}</td>
+                      <td style={{ padding: '12px', color: '#10b981', fontWeight: '700' }}>
+                        {Number(delivery.amount || 0).toFixed(2)} MAD
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        <StatusBadge status={delivery.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
+          )}
         </div>
       </div>
     </MainLayout>

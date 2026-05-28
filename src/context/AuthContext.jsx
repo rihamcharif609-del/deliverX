@@ -101,6 +101,19 @@ export const AuthProvider = ({ children }) => {
     }
   }, [clearAuth, token]);
 
+  const updateProfile = useCallback(async ({ name, email, phone, profile_photo }) => {
+    const { data } = await axios.patch(`${API_BASE_URL}/auth/profile`, {
+      name,
+      email,
+      phone,
+      profile_photo,
+    });
+
+    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+    setUser(data.user);
+    return data.user;
+  }, []);
+
   const value = useMemo(
     () => ({
       token,
@@ -110,9 +123,10 @@ export const AuthProvider = ({ children }) => {
       isAuthenticated: Boolean(token && user),
       login,
       logout,
+      updateProfile,
       fetchUser,
     }),
-    [token, user, initializing, login, logout, fetchUser]
+    [token, user, initializing, login, logout, updateProfile, fetchUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
