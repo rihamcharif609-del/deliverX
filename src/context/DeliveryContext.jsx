@@ -10,14 +10,12 @@ const DeliveryContext = createContext();
 const API_BASE_URL = 'http://localhost:8000/api/v1';
 
 const defaultCourierEarnings = {
-  total: 6825,
-  pending: 68,
-  released: 102,
-  withdrawHistory: [
-    { id: 'W-001', amount: 1500, status: 'completed', date: '2026-05-01' },
-    { id: 'W-002', amount: 2000, status: 'completed', date: '2026-05-10' },
-    { id: 'W-003', amount: 1200, status: 'completed', date: '2026-05-18' }
-  ]
+  total: 0,
+  pending: 0,
+  released: 0,
+  pendingWithdrawals: 0,
+  withdrawnTotal: 0,
+  withdrawHistory: []
 };
 
 const defaultCouriers = [
@@ -189,6 +187,30 @@ const mapAdminRatingSummary = (summary = {}) => ({
     : [],
 });
 
+const mapWithdrawalFromApi = (withdrawal) => ({
+  id: withdrawal.id,
+  courierId: withdrawal.courier_id,
+  courierName: withdrawal.courier_name || 'Courier',
+  amount: Number(withdrawal.amount || 0),
+  bankName: withdrawal.bank_name || 'Local Bank Transfer',
+  rib: withdrawal.rib || '',
+  status: withdrawal.status || 'pending',
+  date: withdrawal.requested_at ? withdrawal.requested_at.slice(0, 10) : '',
+  requestedAt: withdrawal.requested_at,
+  processedAt: withdrawal.processed_at,
+});
+
+const mapCourierWalletFromApi = (wallet = {}) => ({
+  total: Number(wallet.total_earnings || 0),
+  pending: Number(wallet.escrow_balance || 0),
+  released: Number(wallet.released_balance || 0),
+  pendingWithdrawals: Number(wallet.pending_withdrawals || 0),
+  withdrawnTotal: Number(wallet.withdrawn_total || 0),
+  withdrawHistory: Array.isArray(wallet.withdraw_history)
+    ? wallet.withdraw_history.map(mapWithdrawalFromApi)
+    : [],
+});
+
 export const DeliveryProvider = ({ children }) => {
   const { user } = useAuth();
   const userId = user?.id ? String(user.id) : null;
@@ -238,6 +260,7 @@ export const DeliveryProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [courierRatingSummary, setCourierRatingSummary] = useState(() => mapCourierRatingSummary());
   const [adminRatingSummary, setAdminRatingSummary] = useState(() => mapAdminRatingSummary());
+  const [adminWithdrawals, setAdminWithdrawals] = useState([]);
 
   useEffect(() => {
     if (!user) return;
@@ -312,6 +335,31 @@ export const DeliveryProvider = ({ children }) => {
     const mapped = mapCourierRatingSummary(data.data || {});
     setCourierRatingSummary(mapped);
     return mapped;
+  }, []);
+
+  const fetchCourierWallet = useCallback(async () => {
+    const { data } = await axios.get(`${API_BASE_URL}/courier/wallet`);
+    const mapped = mapCourierWalletFromApi(data.data || {});
+    setCourierEarnings(mapped);
+    return mapped;
+  }, []);
+
+  const fetchAdminWithdrawals = useCallback(async () => {
+    const { data } = await axios.get(`${API_BASE_URL}/admin/withdrawals`);
+    const mapped = Array.isArray(data.data) ? data.data.map(mapWithdrawalFromApi) : [];
+    setAdminWithdrawals(mapped);
+    return mapped;
+  }, []);
+
+  const decideWithdrawal = useCallback(async (withdrawalId, status) => {
+    const { data } = await axios.patch(`${API_BASE_URL}/admin/withdrawals/${withdrawalId}`, {
+      status,
+    });
+    const updated = mapWithdrawalFromApi(data.data);
+    setAdminWithdrawals(prev => prev.map((item) => (
+      item.id === updated.id ? updated : item
+    )));
+    return updated;
   }, []);
 
   const fetchAdminDashboard = useCallback(async () => {
@@ -432,7 +480,6 @@ export const DeliveryProvider = ({ children }) => {
     });
     const paidDelivery = mapDeliveryFromApi(data.data);
     const targetAmount = paidDelivery.amount;
-    const targetCommission = paidDelivery.commission;
 
     setDeliveries(prev => prev.map(d => (
       d.id === deliveryId ? { ...d, ...paidDelivery } : d
@@ -444,10 +491,7 @@ export const DeliveryProvider = ({ children }) => {
       pendingPayments: prev.pendingPayments + targetAmount
     }));
 
-    setCourierEarnings(prev => ({
-      ...prev,
-      pending: prev.pending + (targetAmount - targetCommission)
-    }));
+    fetchCourierWallet().catch(() => {});
 
     addNotification({
       type: 'payment_received',
@@ -579,6 +623,7 @@ export const DeliveryProvider = ({ children }) => {
         released: prev.released + courierEarn,
         total: prev.total + courierEarn
       }));
+      fetchCourierWallet().catch(() => {});
 
       addNotification({
         type: 'delivery_completed',
@@ -622,25 +667,27 @@ export const DeliveryProvider = ({ children }) => {
   };
 
   // 6. Request Courier Withdrawal (Courier)
-  const requestWithdrawal = (amount, bank = 'CIH Bank') => {
-    if (courierEarnings.released >= amount) {
-      const newWithdrawal = {
-        id: 'W-' + Math.floor(100 + Math.random() * 900),
-        amount: amount,
-        status: 'completed',
-        date: new Date().toISOString().split('T')[0],
-        bankName: bank
+  const requestWithdrawal = async (amount, bank = 'CIH Bank', rib = '') => {
+    try {
+      const { data } = await axios.post(`${API_BASE_URL}/courier/withdrawals`, {
+        amount,
+        bank_name: bank,
+        rib,
+      });
+      const wallet = mapCourierWalletFromApi(data.wallet || {});
+      setCourierEarnings(wallet);
+
+      return {
+        success: true,
+        message: `Withdrawal of ${amount} MAD requested successfully!`,
+        withdrawal: mapWithdrawalFromApi(data.data),
       };
-
-      setCourierEarnings(prev => ({
-        ...prev,
-        released: prev.released - amount,
-        withdrawHistory: [newWithdrawal, ...prev.withdrawHistory]
-      }));
-
-      return { success: true, message: `Withdrawal of ${amount} MAD processed successfully!` };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || 'Could not request withdrawal.',
+      };
     }
-    return { success: false, message: 'Insufficient released balance.' };
   };
 
   // 7. Dispute & Refund Delivery (Admin)
@@ -823,12 +870,16 @@ export const DeliveryProvider = ({ children }) => {
       adminAnalytics,
       courierRatingSummary,
       adminRatingSummary,
+      adminWithdrawals,
       notifications,
       getNotificationsForRole,
       fetchNotifications,
       fetchDeliveries,
       fetchCourierRatings,
+      fetchCourierWallet,
       fetchAdminDashboard,
+      fetchAdminWithdrawals,
+      decideWithdrawal,
       createDelivery,
       acceptDelivery,
       payDelivery,

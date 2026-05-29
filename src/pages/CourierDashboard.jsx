@@ -31,6 +31,7 @@ const CourierDashboard = () => {
     requestWithdrawal,
     fetchDeliveries,
     fetchCourierRatings,
+    fetchCourierWallet,
     courierRatingSummary
   } = useDelivery();
   const currentCourierName = user?.name || 'Courier';
@@ -38,7 +39,8 @@ const CourierDashboard = () => {
   useEffect(() => {
     fetchDeliveries('courier').catch(() => {});
     fetchCourierRatings().catch(() => {});
-  }, [fetchDeliveries, fetchCourierRatings]);
+    fetchCourierWallet().catch(() => {});
+  }, [fetchDeliveries, fetchCourierRatings, fetchCourierWallet]);
 
   const myCourierInfo = {
     rating: courierRatingSummary.averageRating || 0,
@@ -89,7 +91,7 @@ const CourierDashboard = () => {
     navigate('/courier/deliveries');
   };
 
-  const handleWithdrawSubmit = (e) => {
+  const handleWithdrawSubmit = async (e) => {
     e.preventDefault();
     const amountNum = parseFloat(withdrawAmount);
 
@@ -111,18 +113,19 @@ const CourierDashboard = () => {
     setWithdrawError('');
     setWithdrawLoading(true);
 
-    // Simulate instant payout processing (Moroccan Bank Transfer)
-    setTimeout(() => {
-      const res = requestWithdrawal(amountNum);
+    try {
+      const res = await requestWithdrawal(amountNum, bankName, ribNumber);
       setWithdrawLoading(false);
       if (res.success) {
-        setTxnRef('W-TXN-' + Math.floor(100000 + Math.random() * 900000));
+        setTxnRef(`W-${res.withdrawal?.id || Math.floor(100000 + Math.random() * 900000)}`);
         setWithdrawSuccess(true);
-        // Sync context updates
       } else {
         setWithdrawError(res.message);
       }
-    }, 1500);
+    } catch {
+      setWithdrawLoading(false);
+      setWithdrawError('Could not request withdrawal.');
+    }
   };
 
   const handleCloseWithdrawModal = () => {
@@ -454,8 +457,8 @@ const CourierDashboard = () => {
                         borderRadius: '20px',
                         fontSize: '11px',
                         fontWeight: '600',
-                        backgroundColor: w.status === 'completed' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(234, 179, 8, 0.12)',
-                        color: w.status === 'completed' ? '#10b981' : '#eab308'
+                        backgroundColor: w.status === 'approved' ? 'rgba(16, 185, 129, 0.12)' : w.status === 'rejected' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(234, 179, 8, 0.12)',
+                        color: w.status === 'approved' ? '#10b981' : w.status === 'rejected' ? '#ef4444' : '#eab308'
                       }}>
                         {w.status.toUpperCase()}
                       </span>

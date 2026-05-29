@@ -32,13 +32,17 @@ const AdminDashboard = ({ setUserRole }) => {
     refundDelivery,
     fetchDeliveries,
     fetchAdminDashboard,
-    adminRatingSummary
+    adminRatingSummary,
+    adminWithdrawals,
+    fetchAdminWithdrawals,
+    decideWithdrawal
   } = useDelivery();
 
   useEffect(() => {
     fetchDeliveries('admin').catch(() => {});
     fetchAdminDashboard().catch(() => {});
-  }, [fetchDeliveries, fetchAdminDashboard]);
+    fetchAdminWithdrawals().catch(() => {});
+  }, [fetchDeliveries, fetchAdminDashboard, fetchAdminWithdrawals]);
 
   // Search & Filter state for the Payment Monitor Table
   const [searchTerm, setSearchTerm] = useState('');
@@ -117,6 +121,7 @@ const AdminDashboard = ({ setUserRole }) => {
   const topCouriers = adminRatingSummary.topRatedCouriers.slice(0, 3);
   const worstCouriers = adminRatingSummary.worstRatedCouriers.slice(0, 3);
   const latestReviews = adminRatingSummary.latestReviews.slice(0, 5);
+  const latestWithdrawals = adminWithdrawals.slice(0, 5);
 
   const getRecentComment = (courierName) => {
     const courierReview = latestReviews.find(
@@ -126,6 +131,14 @@ const AdminDashboard = ({ setUserRole }) => {
       return courierReview.comment;
     }
     return null;
+  };
+
+  const handleWithdrawalDecision = async (withdrawalId, status) => {
+    try {
+      await decideWithdrawal(withdrawalId, status);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Could not process withdrawal.');
+    }
   };
 
   return (
@@ -360,6 +373,81 @@ const AdminDashboard = ({ setUserRole }) => {
                 <tr>
                   <td colSpan="8" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
                     No payment records found matching the filters.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* COURIER WITHDRAWALS */}
+      <div className="card" style={{ padding: '24px', borderRadius: '16px', marginBottom: '30px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Courier Withdrawal Requests</h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>Approve or reject Moroccan bank payout requests.</p>
+          </div>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
+                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Courier</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Bank</th>
+                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>RIB</th>
+                <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>Amount</th>
+                <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>Status</th>
+                <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {latestWithdrawals.length > 0 ? latestWithdrawals.map((withdrawal) => (
+                <tr key={withdrawal.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '14px 12px', fontWeight: '600', color: 'var(--text-primary)' }}>{withdrawal.courierName}</td>
+                  <td style={{ padding: '14px 12px' }}>{withdrawal.bankName}</td>
+                  <td style={{ padding: '14px 12px', fontFamily: 'monospace' }}>***{withdrawal.rib.slice(-6)}</td>
+                  <td style={{ padding: '14px 12px', textAlign: 'right', fontWeight: '700', color: '#10b981' }}>{withdrawal.amount.toFixed(2)} MAD</td>
+                  <td style={{ padding: '14px 12px', textAlign: 'center' }}>
+                    <span style={{
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      backgroundColor: withdrawal.status === 'approved' ? 'rgba(16, 185, 129, 0.12)' : withdrawal.status === 'rejected' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(234, 179, 8, 0.12)',
+                      color: withdrawal.status === 'approved' ? '#10b981' : withdrawal.status === 'rejected' ? '#ef4444' : '#eab308'
+                    }}>
+                      {withdrawal.status.toUpperCase()}
+                    </span>
+                  </td>
+                  <td style={{ padding: '14px 12px', textAlign: 'center' }}>
+                    {withdrawal.status === 'pending' ? (
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                        <button
+                          className="btn"
+                          onClick={() => handleWithdrawalDecision(withdrawal.id, 'approved')}
+                          style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: '#10b981', color: '#fff', fontSize: '11px', cursor: 'pointer' }}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          className="btn"
+                          onClick={() => handleWithdrawalDecision(withdrawal.id, 'rejected')}
+                          style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: '#ef4444', color: '#fff', fontSize: '11px', cursor: 'pointer' }}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Processed</span>
+                    )}
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    No withdrawal requests found.
                   </td>
                 </tr>
               )}
