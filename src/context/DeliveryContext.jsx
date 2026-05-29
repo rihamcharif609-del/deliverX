@@ -59,6 +59,21 @@ const migrateNotification = (notif) => ({
   targetRole: resolveNotificationRole(notif),
 });
 
+const mapNotificationFromApi = (notification) => ({
+  id: notification.id,
+  type: notification.type || 'general',
+  text: notification.title || notification.message,
+  description: notification.message,
+  time: notification.created_at ? new Date(notification.created_at).toLocaleString() : 'Just now',
+  isRead: Boolean(notification.is_read),
+  path: notification.path || '',
+  details: notification.data?.details,
+  deliveryId: notification.data?.deliveryId,
+  targetRole: notification.data?.targetRole,
+  targetUserId: notification.user_id,
+  createdAt: notification.created_at,
+});
+
 const toNumber = (value) => Number.parseFloat(value || 0);
 
 const extractPackageType = (description) => {
@@ -160,28 +175,7 @@ export const DeliveryProvider = ({ children }) => {
     return defaultAdminAnalytics;
   });
 
-  const [notifications, setNotifications] = useState(() => {
-    try {
-      const saved = localStorage.getItem('globalNotifications');
-      if (saved && saved !== 'undefined') {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed.map(migrateNotification);
-      }
-    } catch (e) {
-      console.error("Error parsing globalNotifications", e);
-    }
-    return [
-      {
-        id: 1,
-        type: 'user_registered',
-        targetRole: 'admin',
-        text: 'New user registered',
-        description: 'Alex Mercer has registered as a sender.',
-        time: '2 hours ago',
-        isRead: false
-      }
-    ];
-  });
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     if (!user) return;
@@ -193,12 +187,26 @@ export const DeliveryProvider = ({ children }) => {
   }, [adminAnalytics]);
 
   useEffect(() => {
-    localStorage.setItem('globalNotifications', JSON.stringify(notifications));
-  }, [notifications]);
-
-  useEffect(() => {
     localStorage.setItem('myCouriers', JSON.stringify(couriers));
   }, [couriers]);
+
+  const fetchNotifications = useCallback(async () => {
+    if (!user) {
+      setNotifications([]);
+      return [];
+    }
+
+    const { data } = await axios.get(`${API_BASE_URL}/notifications`);
+    const mapped = Array.isArray(data.data) ? data.data.map(mapNotificationFromApi) : [];
+    setNotifications(mapped);
+    return mapped;
+  }, [user]);
+
+  useEffect(() => {
+    fetchNotifications().catch((err) => {
+      console.warn('Could not load notifications from backend.', err);
+    });
+  }, [fetchNotifications]);
 
   const PACKAGE_TYPE_LABELS = {
     documents: 'Documents',
@@ -611,34 +619,78 @@ export const DeliveryProvider = ({ children }) => {
     return { success: false, message: 'Only payments held in escrow can be refunded.' };
   };
 
-  const addNotification = (notif) => {
-    const newNotif = migrateNotification({
-      id: Date.now() + Math.random(),
+  const addNotification = async (notif) => {
+    const normalized = migrateNotification(notif);
+    const shouldShowOptimistic =
+      (normalized.targetUserId && userId && String(normalized.targetUserId) === userId) ||
+      (!normalized.targetUserId && normalized.targetRole === user?.role);
+    const optimisticNotification = {
+      id: `tmp-${Date.now()}-${Math.random()}`,
       isRead: false,
-      ...notif,
-    });
-    setNotifications(prev => [newNotif, ...prev]);
+      time: 'Just now',
+      ...normalized,
+    };
+
+    if (shouldShowOptimistic) {
+      setNotifications(prev => [optimisticNotification, ...prev]);
+    }
+
+    try {
+      const { data } = await axios.post(`${API_BASE_URL}/notifications`, {
+        target_user_id: normalized.targetUserId || null,
+        target_role: normalized.targetUserId ? null : normalized.targetRole,
+        title: normalized.text,
+        message: normalized.description || normalized.text,
+        type: normalized.type,
+        path: normalized.path || null,
+        data: {
+          details: normalized.details,
+          deliveryId: normalized.deliveryId,
+          targetRole: normalized.targetRole,
+        },
+      });
+      const created = Array.isArray(data.data) ? data.data.map(mapNotificationFromApi) : [];
+      const currentUserNotifications = created.filter((notification) => (
+        userId && String(notification.targetUserId) === userId
+      ));
+
+      setNotifications(prev => [
+        ...currentUserNotifications,
+        ...prev.filter((notification) => notification.id !== optimisticNotification.id),
+      ]);
+
+      return created;
+    } catch (err) {
+      if (shouldShowOptimistic) {
+        setNotifications(prev => prev.filter((notification) => notification.id !== optimisticNotification.id));
+      }
+      console.warn('Could not save notification to backend.', err);
+      return [];
+    }
   };
 
-  const getNotificationsForRole = (role) =>
-    notifications.filter((n) => {
-      if (n.targetRole !== role) return false;
-      if (n.targetUserId == null) return role === 'admin';
-      return userId && String(n.targetUserId) === userId;
-    });
+  const getNotificationsForRole = () => notifications;
 
-  const markAsRead = (id, role) => {
+  const markAsRead = async (id) => {
     setNotifications(prev =>
-      prev.map((n) =>
-        n.id === id && (!role || n.targetRole === role) ? { ...n, isRead: true } : n
-      )
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
+
+    try {
+      await axios.patch(`${API_BASE_URL}/notifications/${id}/read`);
+    } catch (err) {
+      console.warn('Could not mark notification as read.', err);
+    }
   };
 
-  const markAllAsRead = (role) => {
-    setNotifications(prev =>
-      prev.map((n) => (n.targetRole === role ? { ...n, isRead: true } : n))
-    );
+  const markAllAsRead = async () => {
+    setNotifications(prev => prev.map((n) => ({ ...n, isRead: true })));
+
+    try {
+      await axios.patch(`${API_BASE_URL}/notifications/read-all`);
+    } catch (err) {
+      console.warn('Could not mark all notifications as read.', err);
+    }
   };
 
   const rateCourier = (deliveryId, ratingValue, comment) => {
@@ -691,8 +743,16 @@ export const DeliveryProvider = ({ children }) => {
     }
   };
 
-  const deleteNotification = (id) => {
+  const deleteNotification = async (id) => {
+    const previous = notifications;
     setNotifications(prev => prev.filter(n => n.id !== id));
+
+    try {
+      await axios.delete(`${API_BASE_URL}/notifications/${id}`);
+    } catch (err) {
+      setNotifications(previous);
+      console.warn('Could not delete notification.', err);
+    }
   };
 
   return (
@@ -704,6 +764,7 @@ export const DeliveryProvider = ({ children }) => {
       adminAnalytics,
       notifications,
       getNotificationsForRole,
+      fetchNotifications,
       fetchDeliveries,
       createDelivery,
       acceptDelivery,
