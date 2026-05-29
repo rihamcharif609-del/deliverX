@@ -57,7 +57,20 @@ const UserTable = ({
               <td>
                 <div className="user-cell">
                   <div className="user-avatar-small">
-                    {user.name.split(' ').map(n => n[0]).join('')}
+                    {user.profile_photo ? (
+                      <img
+                        src={user.profile_photo}
+                        alt={user.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          borderRadius: '50%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                    ) : (
+                      user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                    )}
                   </div>
 
                   <span className="user-name">{user.name}</span>

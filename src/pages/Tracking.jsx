@@ -24,12 +24,16 @@ const Tracking = () => {
   const [hoverRating, setHoverRating] = useState(0);
   const [commentInput, setCommentInput] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [ratingError, setRatingError] = useState('');
+  const [ratingSaving, setRatingSaving] = useState(false);
 
   React.useEffect(() => {
     setRatingInput(0);
     setHoverRating(0);
     setCommentInput('');
     setRatingSubmitted(false);
+    setRatingError('');
+    setRatingSaving(false);
   }, [id]);
 
   React.useEffect(() => {
@@ -641,6 +645,11 @@ const Tracking = () => {
                   <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
                     How was your delivery experience with {delivery.courier}?
                   </p>
+                  {ratingError && (
+                    <p style={{ fontSize: '12px', color: '#ef4444', marginBottom: '12px', textAlign: 'center' }}>
+                      {ratingError}
+                    </p>
+                  )}
                   
                   {/* Star Rating Select */}
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '20px' }}>
@@ -689,23 +698,31 @@ const Tracking = () => {
                   
                   <button
                     className="btn btn-primary"
-                    disabled={ratingInput === 0}
-                    onClick={() => {
-                      rateCourier(delivery.id, ratingInput, commentInput);
-                      setRatingSubmitted(true);
+                    disabled={ratingInput === 0 || ratingSaving}
+                    onClick={async () => {
+                      setRatingError('');
+                      setRatingSaving(true);
+                      try {
+                        await rateCourier(delivery.id, ratingInput, commentInput);
+                        setRatingSubmitted(true);
+                      } catch (err) {
+                        setRatingError(err.response?.data?.message || 'Could not save your rating.');
+                      } finally {
+                        setRatingSaving(false);
+                      }
                     }}
                     style={{
                       width: '100%',
                       padding: '10px 0',
                       borderRadius: '10px',
-                      backgroundColor: ratingInput === 0 ? 'var(--border-color)' : '#2563eb',
-                      borderColor: ratingInput === 0 ? 'var(--border-color)' : '#2563eb',
+                      backgroundColor: ratingInput === 0 || ratingSaving ? 'var(--border-color)' : '#2563eb',
+                      borderColor: ratingInput === 0 || ratingSaving ? 'var(--border-color)' : '#2563eb',
                       fontWeight: '600',
-                      cursor: ratingInput === 0 ? 'not-allowed' : 'pointer',
+                      cursor: ratingInput === 0 || ratingSaving ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s'
                     }}
                   >
-                    Submit Rating
+                    {ratingSaving ? 'Saving...' : 'Submit Rating'}
                   </button>
                 </div>
               )}

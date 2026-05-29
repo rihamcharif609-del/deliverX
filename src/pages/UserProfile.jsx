@@ -1,411 +1,338 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
 import MainLayout from '../layouts/MainLayout';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useCourierVerification } from '../context/CourierVerificationContext';
-import { useDelivery } from '../context/DeliveryContext';
+import StatusBadge from '../components/StatusBadge';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
-const DOC_LABELS = {
-  cinImage: 'CIN Card',
-  licenseImage: 'Driver License',
-  vehicleImage: 'Vehicle Photo',
+const API_BASE_URL = 'http://localhost:8000/api/v1';
+
+const formatDate = (value) => {
+  if (!value) return 'Not provided';
+  return new Date(value).toLocaleDateString();
 };
 
-const MOCK_SENDERS = {
-  1: {
-    id: 1,
-    type: 'sender',
-    name: 'John Smith',
-    email: 'john.smith@example.com',
-    phone: '+212 612 111 111',
-    role: 'sender',
-    status: 'active',
-    totalDeliveries: 45,
-    totalSpent: 1280.5,
-    joinedDate: '2024-01-15',
-  },
-  4: {
-    id: 4,
-    type: 'sender',
-    name: 'Emily Davis',
-    email: 'emily.d@example.com',
-    phone: '+212 612 222 222',
-    role: 'sender',
-    status: 'inactive',
-    totalDeliveries: 12,
-    totalSpent: 340.0,
-    joinedDate: '2024-01-20',
-  },
-  6: {
-    id: 6,
-    type: 'sender',
-    name: 'Lisa Anderson',
-    email: 'lisa.a@example.com',
-    phone: '+212 612 333 333',
-    role: 'sender',
-    status: 'inactive',
-    totalDeliveries: 3,
-    totalSpent: 95.0,
-    joinedDate: '2024-03-01',
-  },
-  8: {
-    id: 8,
-    type: 'sender',
-    name: 'Maria Garcia',
-    email: 'maria.g@example.com',
-    phone: '+212 612 444 444',
-    role: 'sender',
-    status: 'inactive',
-    totalDeliveries: 8,
-    totalSpent: 210.0,
-    joinedDate: '2023-12-12',
-  },
-};
+const initialsFor = (name = 'User') =>
+  name
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'U';
 
-const MOCK_OTHERS = {
-  3: {
-    id: 3,
-    type: 'admin',
-    name: 'Michael Brown',
-    email: 'michael.b@example.com',
-    phone: '—',
-    role: 'admin',
-    status: 'active',
-    joinedDate: '2023-11-10',
-  },
-};
+const Field = ({ label, value }) => (
+  <div className="profile-field">
+    <label>{label}</label>
+    <input type="text" value={value || 'Not provided'} disabled />
+  </div>
+);
+
+const Stat = ({ label, value }) => (
+  <div className="profile-stat-card">
+    <div className="profile-stat-value">{value}</div>
+    <div className="profile-stat-label">{label}</div>
+  </div>
+);
+
+const documentsFor = (profile) => [
+  { label: 'CIN Card', doc: profile?.cin_image },
+  { label: 'Driver License', doc: profile?.license_image },
+  { label: 'Vehicle Photo', doc: profile?.vehicle_image },
+];
 
 const UserProfile = () => {
-  const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const userFromList = location.state?.user;
 
-  const {
-    verification,
-    profile,
-    documents,
-    verificationStatus,
-    approveVerification,
-    rejectVerification,
-  } = useCourierVerification();
-  const { deliveries, courierEarnings, addNotification, couriers } = useDelivery();
-
-  const [rejectReason, setRejectReason] = useState('');
+  const [profile, setProfile] = useState(null);
+  const [stats, setStats] = useState({});
+  const [recentDeliveries, setRecentDeliveries] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [previewDoc, setPreviewDoc] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const isLiveCourier =
-    userFromList?.isLiveCourier || id === 'courier-live' || userFromList?.role === 'courier';
+  useEffect(() => {
+    const fetchUser = async () => {
+      setIsLoading(true);
+      setError('');
 
-  const courierStats = useMemo(() => {
-    const assigned = deliveries.filter(
-      (d) => d.courier === profile.name || d.courier === 'Mike Smith'
-    );
-    const completed = assigned.filter((d) => d.status === 'delivered').length;
-    const myCourierInfo = (couriers || []).find(c => c.name === profile.name) || (couriers || []).find(c => c.name === 'Mike Smith') || { rating: 4.8, completedCount: 0 };
-    return {
-      assigned: assigned.length,
-      completed: myCourierInfo.completedCount || completed,
-      earnings: courierEarnings?.total ?? profile.earnings ?? 0,
-      rating: myCourierInfo.rating,
+      try {
+        const { data } = await axios.get(`${API_BASE_URL}/admin/users/${id}`);
+        setProfile(data.data?.user || null);
+        setStats(data.data?.stats || {});
+        setRecentDeliveries(Array.isArray(data.data?.recent_deliveries) ? data.data.recent_deliveries : []);
+        setReviews(Array.isArray(data.data?.reviews) ? data.data.reviews : []);
+      } catch (err) {
+        if (userFromList) {
+          setProfile({
+            ...userFromList,
+            created_at: userFromList.joined,
+            profile_photo: userFromList.profile_photo || null,
+          });
+          setStats({
+            total_deliveries: userFromList.deliveries || 0,
+            completed_deliveries: 0,
+            reviews_count: 0,
+            average_rating: 0,
+            total_spent: 0,
+            total_earned: 0,
+          });
+          setReviews([]);
+          setError(err.response?.data?.message || 'Could not refresh user details. Showing list data.');
+        } else {
+          setError(err.response?.data?.message || 'Could not load this user profile.');
+        }
+      } finally {
+        setIsLoading(false);
+      }
     };
-  }, [deliveries, profile, courierEarnings, couriers]);
 
-  const notifyCourier = (type, text, description) => {
-    addNotification({
-      type,
-      targetRole: 'courier',
-      text,
-      description,
-      time: 'Just now',
-      path: '/courier/profile',
-    });
-  };
+    fetchUser();
+  }, [id, userFromList]);
 
-  const handleApprove = () => {
-    approveVerification();
-    notifyCourier(
-      'courier_request',
-      'Account Approved',
-      'Your documents were verified. You can now accept deliveries.'
-    );
-  };
+  const roleLabel = useMemo(() => {
+    const role = profile?.role_label || profile?.role || 'User';
+    return role.charAt(0).toUpperCase() + role.slice(1);
+  }, [profile]);
 
-  const handleReject = () => {
-    const reason = rejectReason.trim() || 'Documents do not meet requirements.';
-    rejectVerification(reason);
-    notifyCourier('courier_notify_refunded', 'Verification Rejected', reason);
-    setRejectReason('');
-  };
-
-  if (isLiveCourier) {
-    const hasDocuments =
-      documents.cinImage?.dataUrl &&
-      documents.licenseImage?.dataUrl &&
-      documents.vehicleImage?.dataUrl;
-
+  if (isLoading) {
     return (
-      <MainLayout userRole="admin" activePage="user-profile">
-        <div className="profile-container">
-          <div style={{ marginBottom: '16px' }}>
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={() => navigate('/admin/users')}
-            >
-              ← Back to Users
-            </button>
+      <MainLayout userRole="admin" activePage="/admin/users">
+        <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
+          Loading user profile...
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <MainLayout userRole="admin" activePage="/admin/users">
+        <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
+          <p style={{ marginBottom: '16px', color: '#ef4444' }}>{error || 'User not found.'}</p>
+          <button type="button" className="btn btn-primary" onClick={() => navigate('/admin/users')}>
+            Back to Users
+          </button>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  const isCourier = profile.role === 'courier';
+  const isSender = profile.role === 'sender';
+
+  return (
+    <MainLayout userRole="admin" activePage="/admin/users">
+      <div className="profile-container">
+        <button type="button" className="btn btn-outline" onClick={() => navigate('/admin/users')}>
+          Back to Users
+        </button>
+
+        {error && (
+          <div className="card" style={{ marginTop: '16px', padding: '14px', color: '#b45309', borderLeft: '4px solid #f59e0b' }}>
+            {error}
           </div>
+        )}
 
-          <div className="profile-header">
-            <div className="profile-avatar-large">
-              {profile.photo ? (
-                <img src={profile.photo} alt="Courier" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-              ) : (
-                profile.avatar || 'MC'
-              )}
-            </div>
-            <h1 className="profile-name">{profile.name}</h1>
-            <div className="profile-role">Courier</div>
-            <div className={`verification-badge ${verificationStatus}`}>
-              {verificationStatus === 'approved' && '✅ Verified'}
-              {verificationStatus === 'pending' && '⏳ Pending Review'}
-              {verificationStatus === 'rejected' && '❌ Rejected'}
-              {verificationStatus === 'draft' && '📝 Documents Not Submitted'}
-            </div>
-          </div>
-
-          <div className="profile-stats-grid">
-            <div className="profile-stat-card">
-              <div className="profile-stat-value">{courierStats.completed}</div>
-              <div className="profile-stat-label">Completed Deliveries</div>
-            </div>
-            <div className="profile-stat-card">
-              <div className="profile-stat-value">{courierStats.assigned}</div>
-              <div className="profile-stat-label">Assigned Orders</div>
-            </div>
-            <div className="profile-stat-card">
-              <div className="profile-stat-value">{courierStats.rating} ⭐</div>
-              <div className="profile-stat-label">Rating</div>
-            </div>
-            <div className="profile-stat-card">
-              <div className="profile-stat-value">{courierStats.earnings.toFixed(2)} MAD</div>
-              <div className="profile-stat-label">Total Earnings</div>
-            </div>
-          </div>
-
-          {verification.submittedAt && (
-            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-              Documents submitted: {new Date(verification.submittedAt).toLocaleString()}
-              {verification.reviewedAt &&
-                ` · Reviewed: ${new Date(verification.reviewedAt).toLocaleString()}`}
-            </p>
-          )}
-          {verification.rejectionReason && verificationStatus === 'rejected' && (
-            <div
-              className="card"
-              style={{ marginBottom: '20px', borderLeft: '4px solid #ef4444', padding: '16px' }}
-            >
-              <strong style={{ color: '#ef4444' }}>Rejection reason:</strong>{' '}
-              {verification.rejectionReason}
-            </div>
-          )}
-
-          <div className="profile-section">
-            <div className="profile-section-title">
-              <span>Personal Information</span>
-            </div>
-            <div className="profile-form-grid">
-              <div className="profile-field">
-                <label>Full Name</label>
-                <input type="text" value={profile.name} disabled />
-              </div>
-              <div className="profile-field">
-                <label>Email</label>
-                <input type="email" value={profile.email} disabled />
-              </div>
-              <div className="profile-field">
-                <label>Phone</label>
-                <input type="tel" value={profile.phone} disabled />
-              </div>
-              <div className="profile-field">
-                <label>Address</label>
-                <input type="text" value={profile.address} disabled />
-              </div>
-            </div>
-          </div>
-
-          <div className="profile-section">
-            <div className="profile-section-title">
-              <span>Vehicle & Identity</span>
-            </div>
-            <div className="profile-form-grid">
-              <div className="profile-field">
-                <label>Vehicle Type</label>
-                <input type="text" value={profile.vehicleType} disabled />
-              </div>
-              <div className="profile-field">
-                <label>Vehicle Number</label>
-                <input type="text" value={profile.vehicleNumber} disabled />
-              </div>
-              <div className="profile-field">
-                <label>CIN Number</label>
-                <input type="text" value={profile.cinNumber} disabled />
-              </div>
-              <div className="profile-field">
-                <label>Driver License</label>
-                <input type="text" value={profile.driverLicense} disabled />
-              </div>
-            </div>
-          </div>
-
-          <div className="profile-section">
-            <div className="profile-section-title">
-              <span>Required Documents</span>
-            </div>
-
-            {!hasDocuments ? (
-              <p style={{ color: 'var(--text-secondary)' }}>
-                No documents uploaded yet. Courier must submit from their profile.
-              </p>
+        <div className="profile-header" style={{ marginTop: '20px' }}>
+          <div className="profile-avatar-large" style={{ overflow: 'hidden' }}>
+            {profile.profile_photo ? (
+              <img
+                src={profile.profile_photo}
+                alt={profile.name}
+                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+              />
             ) : (
-              <div className="profile-form-grid">
-                {Object.entries(DOC_LABELS).map(([key, label]) => {
-                  const doc = documents[key];
-                  return (
-                    <div key={key} className="document-upload">
-                      {doc?.dataUrl ? (
-                        <>
-                          <img
-                            src={doc.dataUrl}
-                            alt={label}
-                            style={{
-                              width: '100%',
-                              maxHeight: '120px',
-                              objectFit: 'cover',
-                              borderRadius: '8px',
-                              marginBottom: '8px',
-                              cursor: 'pointer',
-                            }}
-                            onClick={() => setPreviewDoc({ label, dataUrl: doc.dataUrl })}
-                          />
-                          <div className="document-name">{label}</div>
-                          <div className="document-status">✅ {doc.fileName}</div>
-                          <button
-                            type="button"
-                            className="btn btn-outline"
-                            style={{ marginTop: '8px', padding: '4px 10px', fontSize: '12px' }}
-                            onClick={() => setPreviewDoc({ label, dataUrl: doc.dataUrl })}
-                          >
-                            View full size
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <div className="document-icon">📄</div>
-                          <div className="document-name">{label}</div>
-                          <div className="document-status">⚠️ Missing</div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              initialsFor(profile.name)
             )}
           </div>
-
-          {verificationStatus === 'pending' && hasDocuments && (
-            <div className="profile-section card">
-              <h3 style={{ marginBottom: '12px' }}>Admin decision</h3>
-              <div className="form-group">
-                <label>Rejection reason (optional)</label>
-                <textarea
-                  className="form-control"
-                  rows="3"
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="e.g. CIN image is unclear"
-                />
-              </div>
-              <div className="profile-actions">
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  style={{ color: '#ef4444', borderColor: '#ef4444' }}
-                  onClick={handleReject}
-                >
-                  Reject Courier
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  style={{ backgroundColor: '#10b981' }}
-                  onClick={handleApprove}
-                >
-                  Approve & Grant Access
-                </button>
-              </div>
-            </div>
-          )}
-
-          {verificationStatus === 'approved' && (
-            <div className="card" style={{ borderLeft: '4px solid #10b981', padding: '16px' }}>
-              <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
-                This courier is verified and can accept deliveries.
-              </p>
-            </div>
-          )}
-
-          <div className="profile-actions" style={{ marginTop: '24px' }}>
-            <button
-              type="button"
-              className="btn btn-outline"
-              onClick={() => navigate('/admin/courier-verification')}
-            >
-              Open verification page
-            </button>
+          <h1 className="profile-name">{profile.name}</h1>
+          <div className="profile-role">{roleLabel}</div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '12px' }}>
+            <StatusBadge status={profile.status || 'inactive'} />
+            {isCourier && (
+              <span className={`verification-badge ${profile.verification_status === 'approved' ? 'approved' : 'pending'}`}>
+                Verification: {profile.verification_status || 'draft'}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* CUSTOMER REVIEWS SECTION FOR ADMIN */}
-        <div className="profile-section" style={{ marginTop: '30px', maxWidth: '1000px', marginLeft: 'auto', marginRight: 'auto' }}>
+        <div className="profile-stats-grid">
+          <Stat label="Total Deliveries" value={stats.total_deliveries || 0} />
+          <Stat label="Completed Deliveries" value={stats.completed_deliveries || 0} />
+          {isSender && <Stat label="Total Spent" value={`${Number(stats.total_spent || 0).toFixed(2)} MAD`} />}
+          {isSender && <Stat label="Ratings Given" value={stats.ratings_given || 0} />}
+          {isCourier && <Stat label="Average Rating" value={`${Number(stats.average_rating || 0).toFixed(1)} / 5`} />}
+          {isCourier && <Stat label="Reviews Count" value={stats.reviews_count || 0} />}
+          {isCourier && <Stat label="Released Earnings" value={`${Number(stats.total_earned || 0).toFixed(2)} MAD`} />}
+        </div>
+
+        <div className="profile-section">
           <div className="profile-section-title">
-            <span>Customer Reviews & Feedback</span>
+            <span>Personal Information</span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
-            {deliveries.filter(d => (d.courier === profile.name || d.courier === 'Mike Smith') && d.ratingGiven).length > 0 ? (
-              deliveries.filter(d => (d.courier === profile.name || d.courier === 'Mike Smith') && d.ratingGiven).map(d => (
-                <div key={d.id} style={{
-                  padding: '16px',
-                  borderRadius: '12px',
-                  border: '1px solid var(--border-color)',
-                  background: 'var(--hover-bg)',
-                  textAlign: 'left'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)' }}>{d.id}</span>
-                    <span style={{ color: '#facc15', fontSize: '12px' }}>
-                      {'★'.repeat(d.ratingGiven)}{'☆'.repeat(5 - d.ratingGiven)}
+          <div className="profile-form-grid">
+            <Field label="Full Name" value={profile.name} />
+            <Field label="Email" value={profile.email} />
+            <Field label="Phone" value={profile.phone} />
+            <Field label="Address" value={profile.address} />
+            <Field label="Role" value={roleLabel} />
+            <Field label="Account Status" value={profile.status} />
+            <Field label="Joined Date" value={formatDate(profile.created_at || profile.joined)} />
+            <Field label="Email Verified" value={profile.email_verified_at ? formatDate(profile.email_verified_at) : 'No'} />
+          </div>
+        </div>
+
+        {isCourier && (
+          <div className="profile-section">
+            <div className="profile-section-title">
+              <span>Courier Information</span>
+            </div>
+            <div className="profile-form-grid">
+              <Field label="Vehicle Type" value={profile.vehicle_type} />
+              <Field label="Vehicle Number" value={profile.vehicle_number} />
+              <Field label="CIN Number" value={profile.cin_number} />
+              <Field label="Driver License" value={profile.driver_license} />
+              <Field label="Verification Status" value={profile.verification_status || 'draft'} />
+              <Field label="Submitted At" value={formatDate(profile.verification_submitted_at)} />
+              <Field label="Reviewed At" value={formatDate(profile.verification_reviewed_at)} />
+              <Field label="Rejection Reason" value={profile.verification_rejection_reason} />
+            </div>
+          </div>
+        )}
+
+        {isCourier && (
+          <div className="profile-section">
+            <div className="profile-section-title">
+              <span>Courier Documents</span>
+            </div>
+            <div className="profile-form-grid">
+              {documentsFor(profile).map(({ label, doc }) => (
+                <div key={label} className="document-upload">
+                  {doc?.dataUrl ? (
+                    <>
+                      <img
+                        src={doc.dataUrl}
+                        alt={label}
+                        style={{
+                          width: '100%',
+                          maxHeight: '150px',
+                          objectFit: 'cover',
+                          borderRadius: '8px',
+                          marginBottom: '10px',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => setPreviewDoc({ label, dataUrl: doc.dataUrl })}
+                      />
+                      <div className="document-name">{label}</div>
+                      <div className="document-status">{doc.fileName || 'Uploaded document'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        Uploaded: {formatDate(doc.uploadedAt)}
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        style={{ marginTop: '10px', padding: '6px 12px', fontSize: '12px' }}
+                        onClick={() => setPreviewDoc({ label, dataUrl: doc.dataUrl })}
+                      >
+                        View Document
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="document-icon">DOC</div>
+                      <div className="document-name">{label}</div>
+                      <div className="document-status">Missing</div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="profile-section">
+          <div className="profile-section-title">
+            <span>{isCourier ? 'Reviews & Ratings' : 'Ratings Given'}</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
+            {reviews.length > 0 ? (
+              reviews.map((review) => (
+                <div
+                  key={review.id}
+                  style={{
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--hover-bg)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
+                    <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
+                      {isCourier ? review.sender_name || 'Sender' : review.courier_name || 'Courier'}
+                    </strong>
+                    <span style={{ color: '#facc15', fontSize: '12px', flexShrink: 0 }}>
+                      {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
                     </span>
                   </div>
-                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                    Rated by: <strong>{d.customer}</strong> • {d.date}
+                  <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    {review.delivery_code || `DEL-${review.delivery_id}`} - {formatDate(review.created_at)}
                   </p>
-                  {d.ratingComment ? (
-                    <p style={{ fontSize: '12px', fontStyle: 'italic', color: 'var(--text-primary)', margin: 0 }}>
-                      "{d.ratingComment}"
-                    </p>
-                  ) : (
-                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>
-                      No comment left.
-                    </p>
-                  )}
+                  <p style={{ margin: 0, fontSize: '12px', fontStyle: 'italic', color: 'var(--text-primary)' }}>
+                    "{review.comment || 'No comment left.'}"
+                  </p>
                 </div>
               ))
             ) : (
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', fontStyle: 'italic' }}>
-                No customer reviews received yet.
+              <p style={{ gridColumn: '1 / -1', color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>
+                No reviews or ratings found for this user.
               </p>
             )}
+          </div>
+        </div>
+
+        <div className="profile-section">
+          <div className="profile-section-title">
+            <span>Recent Deliveries</span>
+          </div>
+
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Tracking</th>
+                  <th>Sender</th>
+                  <th>Courier</th>
+                  <th>Status</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentDeliveries.length > 0 ? (
+                  recentDeliveries.map((delivery) => (
+                    <tr key={delivery.id}>
+                      <td>{delivery.tracking_code || `DEL-${delivery.id}`}</td>
+                      <td>{delivery.sender?.name || 'N/A'}</td>
+                      <td>{delivery.courier?.name || 'Unassigned'}</td>
+                      <td><StatusBadge status={delivery.status} /></td>
+                      <td>{Number(delivery.amount || 0).toFixed(2)} MAD</td>
+                      <td>{formatDate(delivery.created_at)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                      No recent deliveries for this user.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -432,122 +359,6 @@ const UserProfile = () => {
             </div>
           </div>
         )}
-      </MainLayout>
-    );
-  }
-
-  const userData =
-    MOCK_SENDERS[id] ||
-    MOCK_OTHERS[id] ||
-    (userFromList?.role === 'sender'
-      ? {
-          type: 'sender',
-          name: userFromList.name,
-          email: userFromList.email,
-          phone: '—',
-          status: userFromList.status,
-          totalDeliveries: userFromList.deliveries ?? 0,
-          totalSpent: 0,
-          joinedDate: userFromList.joined,
-        }
-      : null);
-
-  if (!userData) {
-    return (
-      <MainLayout userRole="admin" activePage="user-profile">
-        <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
-          <p>User not found.</p>
-          <button type="button" className="btn btn-primary" onClick={() => navigate('/admin/users')}>
-            Back to Users
-          </button>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  if (userData.type === 'admin') {
-    return (
-      <MainLayout userRole="admin" activePage="user-profile">
-        <div className="profile-container">
-          <button type="button" className="btn btn-outline" onClick={() => navigate('/admin/users')}>
-            ← Back to Users
-          </button>
-          <div className="profile-header" style={{ marginTop: '20px' }}>
-            <div className="profile-avatar-large">
-              {userData.name.split(' ').map((n) => n[0]).join('')}
-            </div>
-            <h1 className="profile-name">{userData.name}</h1>
-            <div className="profile-role">Administrator</div>
-          </div>
-          <div className="profile-section">
-            <div className="profile-form-grid">
-              <div className="profile-field">
-                <label>Email</label>
-                <input type="email" value={userData.email} disabled />
-              </div>
-              <div className="profile-field">
-                <label>Joined</label>
-                <input type="text" value={userData.joinedDate} disabled />
-              </div>
-            </div>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  return (
-    <MainLayout userRole="admin" activePage="user-profile">
-      <div className="profile-container">
-        <button type="button" className="btn btn-outline" onClick={() => navigate('/admin/users')}>
-          ← Back to Users
-        </button>
-
-        <div className="profile-header" style={{ marginTop: '20px' }}>
-          <div className="profile-avatar-large">
-            {userData.name.split(' ').map((n) => n[0]).join('')}
-          </div>
-          <h1 className="profile-name">{userData.name}</h1>
-          <div className="profile-role">Sender</div>
-          <span className={`verification-badge ${userData.status === 'active' ? 'approved' : 'pending'}`}>
-            {userData.status === 'active' ? '✅ Active' : '⏸ Inactive'}
-          </span>
-        </div>
-
-        <div className="profile-stats-grid">
-          <div className="profile-stat-card">
-            <div className="profile-stat-value">{userData.totalDeliveries}</div>
-            <div className="profile-stat-label">Total Deliveries</div>
-          </div>
-          <div className="profile-stat-card">
-            <div className="profile-stat-value">{userData.totalSpent.toFixed(2)} MAD</div>
-            <div className="profile-stat-label">Total Spent</div>
-          </div>
-        </div>
-
-        <div className="profile-section">
-          <div className="profile-section-title">
-            <span>Personal Information</span>
-          </div>
-          <div className="profile-form-grid">
-            <div className="profile-field">
-              <label>Full Name</label>
-              <input type="text" value={userData.name} disabled />
-            </div>
-            <div className="profile-field">
-              <label>Email</label>
-              <input type="email" value={userData.email} disabled />
-            </div>
-            <div className="profile-field">
-              <label>Phone</label>
-              <input type="tel" value={userData.phone} disabled />
-            </div>
-            <div className="profile-field">
-              <label>Joined Date</label>
-              <input type="text" value={userData.joinedDate} disabled />
-            </div>
-          </div>
-        </div>
       </div>
     </MainLayout>
   );

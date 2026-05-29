@@ -121,6 +121,9 @@ const mapDeliveryFromApi = (delivery) => {
           paidAt: delivery.paid_at ? new Date(delivery.paid_at).toLocaleString() : '',
         }
       : null,
+    ratingGiven: delivery.rating?.rating || null,
+    ratingComment: delivery.rating?.comment || '',
+    courierRating: delivery.rating?.rating ? String(delivery.rating.rating) : null,
     date: delivery.delivery_date || delivery.created_at?.slice(0, 10) || '',
     time: delivery.delivery_time || '',
     instructions: delivery.notes || delivery.package_description || '',
@@ -128,6 +131,63 @@ const mapDeliveryFromApi = (delivery) => {
     createdAt: delivery.created_at,
   };
 };
+
+const mapRatingFromApi = (rating) => ({
+  id: rating.id,
+  deliveryId: rating.delivery_id,
+  deliveryCode: rating.delivery_code || `DEL-${rating.delivery_id}`,
+  senderId: rating.sender_id,
+  senderName: rating.sender_name || 'Sender',
+  customer: rating.sender_name || 'Sender',
+  courierId: rating.courier_id,
+  courierName: rating.courier_name || 'Courier',
+  rating: Number(rating.rating || 0),
+  ratingGiven: Number(rating.rating || 0),
+  comment: rating.comment || '',
+  ratingComment: rating.comment || '',
+  createdAt: rating.created_at,
+  date: rating.created_at ? rating.created_at.slice(0, 10) : '',
+});
+
+const mapCourierRatingSummary = (summary = {}) => ({
+  courierId: summary.courier_id,
+  courierName: summary.courier_name || 'Courier',
+  averageRating: Number(summary.average_rating || 0),
+  reviewsCount: Number(summary.reviews_count || 0),
+  latestComments: Array.isArray(summary.latest_comments)
+    ? summary.latest_comments.map(mapRatingFromApi)
+    : [],
+});
+
+const mapAdminRatingSummary = (summary = {}) => ({
+  topRatedCouriers: Array.isArray(summary.top_rated_couriers)
+    ? summary.top_rated_couriers.map((courier) => ({
+        courierId: courier.courier_id,
+        name: courier.courier_name || 'Courier',
+        vehicle: 'Courier',
+        averageRating: Number(courier.average_rating || 0),
+        rating: Number(courier.average_rating || 0),
+        reviewsCount: Number(courier.reviews_count || 0),
+        ratingsCount: Number(courier.reviews_count || 0),
+        completedCount: Number(courier.reviews_count || 0),
+      }))
+    : [],
+  worstRatedCouriers: Array.isArray(summary.worst_rated_couriers)
+    ? summary.worst_rated_couriers.map((courier) => ({
+        courierId: courier.courier_id,
+        name: courier.courier_name || 'Courier',
+        vehicle: 'Courier',
+        averageRating: Number(courier.average_rating || 0),
+        rating: Number(courier.average_rating || 0),
+        reviewsCount: Number(courier.reviews_count || 0),
+        ratingsCount: Number(courier.reviews_count || 0),
+        completedCount: Number(courier.reviews_count || 0),
+      }))
+    : [],
+  latestReviews: Array.isArray(summary.latest_reviews)
+    ? summary.latest_reviews.map(mapRatingFromApi)
+    : [],
+});
 
 export const DeliveryProvider = ({ children }) => {
   const { user } = useAuth();
@@ -140,7 +200,7 @@ export const DeliveryProvider = ({ children }) => {
   const [deliveriesLoading, setDeliveriesLoading] = useState(false);
   const [deliveriesError, setDeliveriesError] = useState('');
 
-  const [couriers, setCouriers] = useState(() => {
+  const [couriers] = useState(() => {
     try {
       const saved = localStorage.getItem('myCouriers');
       if (saved && saved !== 'undefined') {
@@ -176,6 +236,8 @@ export const DeliveryProvider = ({ children }) => {
   });
 
   const [notifications, setNotifications] = useState([]);
+  const [courierRatingSummary, setCourierRatingSummary] = useState(() => mapCourierRatingSummary());
+  const [adminRatingSummary, setAdminRatingSummary] = useState(() => mapAdminRatingSummary());
 
   useEffect(() => {
     if (!user) return;
@@ -243,6 +305,30 @@ export const DeliveryProvider = ({ children }) => {
     } finally {
       setDeliveriesLoading(false);
     }
+  }, []);
+
+  const fetchCourierRatings = useCallback(async () => {
+    const { data } = await axios.get(`${API_BASE_URL}/courier/ratings`);
+    const mapped = mapCourierRatingSummary(data.data || {});
+    setCourierRatingSummary(mapped);
+    return mapped;
+  }, []);
+
+  const fetchAdminDashboard = useCallback(async () => {
+    const { data } = await axios.get(`${API_BASE_URL}/admin/dashboard`);
+    const rows = data.data || {};
+    const ratings = mapAdminRatingSummary(rows.ratings || {});
+
+    setAdminRatingSummary(ratings);
+    setAdminAnalytics(prev => ({
+      ...prev,
+      totalRevenue: Number(rows.total_revenue || prev.totalRevenue || 0),
+    }));
+
+    return {
+      ...rows,
+      ratings,
+    };
   }, []);
 
   // 1. Create a delivery request (Sender)
@@ -693,54 +779,27 @@ export const DeliveryProvider = ({ children }) => {
     }
   };
 
-  const rateCourier = (deliveryId, ratingValue, comment) => {
-    let courierName = '';
+  const rateCourier = async (deliveryId, ratingValue, comment) => {
+    const target = deliveries.find((delivery) => delivery.id === deliveryId);
+    const apiId = target?.apiId || deliveryId;
+    const { data } = await axios.post(`${API_BASE_URL}/sender/deliveries/${apiId}/rating`, {
+      rating: ratingValue,
+      comment: comment || '',
+    });
+    const savedRating = data.data;
 
-    setDeliveries(prev => prev.map(d => {
-      if (d.id === deliveryId) {
-        courierName = d.courier;
-        return {
-          ...d,
-          courierRating: String(ratingValue),
-          ratingGiven: ratingValue,
-          ratingComment: comment || ''
-        };
-      }
-      return d;
-    }));
+    setDeliveries(prev => prev.map(d => (
+      d.id === deliveryId
+        ? {
+            ...d,
+            courierRating: String(savedRating.rating),
+            ratingGiven: savedRating.rating,
+            ratingComment: savedRating.comment || ''
+          }
+        : d
+    )));
 
-    if (courierName) {
-      setCouriers(prev => {
-        const exists = prev.some(c => c.name === courierName);
-        if (exists) {
-          return prev.map(c => {
-            if (c.name === courierName) {
-              const newCount = (c.ratingsCount || 0) + 1;
-              const newRating = parseFloat((((c.rating || 0) * (c.ratingsCount || 0)) + ratingValue) / newCount).toFixed(1);
-              return {
-                ...c,
-                rating: parseFloat(newRating),
-                ratingsCount: newCount,
-                completedCount: (c.completedCount || 0) + 1
-              };
-            }
-            return c;
-          });
-        } else {
-          return [
-            ...prev,
-            {
-              name: courierName,
-              vehicle: 'Motorcycle',
-              rating: ratingValue,
-              ratingsCount: 1,
-              completedCount: 1,
-              avatar: courierName.split(' ').map(n => n[0]).join('')
-            }
-          ];
-        }
-      });
-    }
+    return savedRating;
   };
 
   const deleteNotification = async (id) => {
@@ -762,10 +821,14 @@ export const DeliveryProvider = ({ children }) => {
       deliveriesError,
       courierEarnings,
       adminAnalytics,
+      courierRatingSummary,
+      adminRatingSummary,
       notifications,
       getNotificationsForRole,
       fetchNotifications,
       fetchDeliveries,
+      fetchCourierRatings,
+      fetchAdminDashboard,
       createDelivery,
       acceptDelivery,
       payDelivery,

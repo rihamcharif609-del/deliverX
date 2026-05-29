@@ -90,7 +90,6 @@ const Users = ({ setUserRole }) => {
               <option value="all">All Roles</option>
               <option value="sender">Sender</option>
               <option value="courier">Courier</option>
-              <option value="admin">Admin</option>
             </select>
 
             <select

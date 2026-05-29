@@ -26,11 +26,19 @@ const AdminDashboard = ({ setUserRole }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { deliveries, adminAnalytics, refundDelivery, couriers, fetchDeliveries } = useDelivery();
+  const {
+    deliveries,
+    adminAnalytics,
+    refundDelivery,
+    fetchDeliveries,
+    fetchAdminDashboard,
+    adminRatingSummary
+  } = useDelivery();
 
   useEffect(() => {
     fetchDeliveries('admin').catch(() => {});
-  }, [fetchDeliveries]);
+    fetchAdminDashboard().catch(() => {});
+  }, [fetchDeliveries, fetchAdminDashboard]);
 
   // Search & Filter state for the Payment Monitor Table
   const [searchTerm, setSearchTerm] = useState('');
@@ -106,17 +114,16 @@ const AdminDashboard = ({ setUserRole }) => {
     { id: 8, name: 'Maria Garcia', email: 'maria.g@example.com', role: 'sender', status: 'inactive', joined: '2026-04-12', deliveries: 8 },
   ];
 
-  // Sort couriers by rating descending, and take the top 3
-  const topCouriers = [...(couriers || [])]
-    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-    .slice(0, 3);
+  const topCouriers = adminRatingSummary.topRatedCouriers.slice(0, 3);
+  const worstCouriers = adminRatingSummary.worstRatedCouriers.slice(0, 3);
+  const latestReviews = adminRatingSummary.latestReviews.slice(0, 5);
 
   const getRecentComment = (courierName) => {
-    const courierDeliveries = (deliveries || []).filter(
-      d => d.courier === courierName && d.ratingComment
+    const courierReview = latestReviews.find(
+      review => review.courierName === courierName && review.comment
     );
-    if (courierDeliveries.length > 0) {
-      return courierDeliveries[0].ratingComment;
+    if (courierReview) {
+      return courierReview.comment;
     }
     return null;
   };
@@ -388,6 +395,7 @@ const AdminDashboard = ({ setUserRole }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {topCouriers.map((courier, index) => {
                 const recentComment = getRecentComment(courier.name);
+                const initials = courier.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
                 return (
                   <div key={courier.name} style={{
                     display: 'flex',
@@ -430,7 +438,7 @@ const AdminDashboard = ({ setUserRole }) => {
                         fontWeight: 'bold',
                         fontSize: '14px'
                       }}>
-                        {courier.avatar || courier.name.split(' ').map(n => n[0]).join('')}
+                        {initials}
                       </div>
                       <div>
                         <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>
@@ -444,8 +452,8 @@ const AdminDashboard = ({ setUserRole }) => {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '10px' }}>
                       <span style={{ color: '#facc15', fontSize: '14px' }}>★</span>
-                      <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{courier.rating.toFixed(1)}</strong>
-                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>({courier.ratingsCount || 0} reviews)</span>
+                      <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{courier.averageRating.toFixed(1)}</strong>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>({courier.reviewsCount || 0} reviews)</span>
                     </div>
 
                     {recentComment && (
@@ -465,6 +473,79 @@ const AdminDashboard = ({ setUserRole }) => {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* RATING MONITOR */}
+      <div className="grid grid-2" style={{ marginBottom: '30px', gap: '25px' }}>
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Worst Rated Couriers</h3>
+          </div>
+          <div className="card" style={{ padding: '20px', borderRadius: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {worstCouriers.length > 0 ? worstCouriers.map((courier, index) => (
+                <div key={courier.courierId || courier.name} style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--hover-bg)'
+                }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                      #{index + 1} {courier.name}
+                    </h4>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      {courier.reviewsCount} reviews
+                    </p>
+                  </div>
+                  <strong style={{ color: '#ef4444', fontSize: '14px' }}>{courier.averageRating.toFixed(1)} / 5</strong>
+                </div>
+              )) : (
+                <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                  No courier ratings found yet.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Latest Reviews</h3>
+          </div>
+          <div className="card" style={{ padding: '20px', borderRadius: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {latestReviews.length > 0 ? latestReviews.map((review) => (
+                <div key={review.id} style={{
+                  padding: '12px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--hover-bg)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '6px' }}>
+                    <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{review.courierName}</strong>
+                    <span style={{ color: '#facc15', fontSize: '12px', flexShrink: 0 }}>
+                      {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                    </span>
+                  </div>
+                  <p style={{ margin: '0 0 6px 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    {review.senderName} on {review.deliveryCode} - {review.date || 'Recent'}
+                  </p>
+                  <p style={{ margin: 0, fontSize: '12px', fontStyle: 'italic', color: 'var(--text-primary)' }}>
+                    "{review.comment || 'No comment left.'}"
+                  </p>
+                </div>
+              )) : (
+                <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                  No latest reviews found yet.
+                </div>
+              )}
             </div>
           </div>
         </div>

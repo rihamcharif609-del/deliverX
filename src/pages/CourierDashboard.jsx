@@ -24,14 +24,27 @@ const CourierDashboard = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { deliveries, courierEarnings, acceptDelivery, requestWithdrawal, couriers, fetchDeliveries } = useDelivery();
+  const {
+    deliveries,
+    courierEarnings,
+    acceptDelivery,
+    requestWithdrawal,
+    fetchDeliveries,
+    fetchCourierRatings,
+    courierRatingSummary
+  } = useDelivery();
   const currentCourierName = user?.name || 'Courier';
 
   useEffect(() => {
     fetchDeliveries('courier').catch(() => {});
-  }, [fetchDeliveries]);
+    fetchCourierRatings().catch(() => {});
+  }, [fetchDeliveries, fetchCourierRatings]);
 
-  const myCourierInfo = (couriers || []).find(c => c.name === currentCourierName) || { rating: 0, ratingsCount: 0, completedCount: 0 };
+  const myCourierInfo = {
+    rating: courierRatingSummary.averageRating || 0,
+    ratingsCount: courierRatingSummary.reviewsCount || 0,
+    completedCount: 0,
+  };
 
   // State for Withdrawal Modal
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -362,8 +375,8 @@ const CourierDashboard = () => {
       <div className="card" style={{ padding: '24px', borderRadius: '16px', marginBottom: '30px' }}>
         <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px', marginBottom: '20px' }}>Recent Reviews & Feedback</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-          {myDeliveries.filter(d => d.ratingGiven).length > 0 ? (
-            myDeliveries.filter(d => d.ratingGiven).slice(0, 3).map(d => (
+          {courierRatingSummary.latestComments.length > 0 ? (
+            courierRatingSummary.latestComments.slice(0, 3).map(d => (
               <div key={d.id} style={{
                 padding: '16px',
                 borderRadius: '12px',
@@ -371,7 +384,7 @@ const CourierDashboard = () => {
                 background: 'var(--hover-bg)'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)' }}>{d.id}</span>
+                  <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)' }}>{d.deliveryCode}</span>
                   <span style={{ color: '#facc15', fontSize: '12px' }}>
                     {'★'.repeat(d.ratingGiven)}{'☆'.repeat(5 - d.ratingGiven)}
                   </span>
