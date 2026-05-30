@@ -206,7 +206,7 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer style={{ backgroundColor: '#1e293b', color: 'white', padding: '60px 40px 30px' }}>
+      <footer id="contact" style={{ backgroundColor: '#1e293b', color: 'white', padding: '60px 40px 30px' }}>
         <div className="container">
           <div className="grid grid-4" style={{ marginBottom: '40px' }}>
             <div>

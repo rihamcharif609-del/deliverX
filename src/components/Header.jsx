@@ -250,7 +250,20 @@ const Header = ({userRole = 'sender', darkMode, setDarkMode }) => {
               setShowNotifications(false);
             }}
           >
-            <div className="user-avatar">{roleAvatar}</div>
+            <div className="user-avatar">{user.profile_photo ? (
+                      <img
+                        src={user.profile_photo}
+                        alt={user.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          borderRadius: '50%',
+                          objectFit: 'cover'
+                        }}
+                      />
+                    ) : (
+                      user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                    )}</div>
             <FaChevronDown />
           </button>
 
