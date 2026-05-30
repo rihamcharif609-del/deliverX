@@ -1,8 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   return (
     <div>
       {/* Navbar */}
@@ -22,20 +24,20 @@ const LandingPage = () => {
       }}>
         <h1 style={{ color: 'var(--primary-color)', fontSize: '28px' }}>DeliverX</h1>
         <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
-          <a href="#features" style={{ textDecoration: 'none', color: 'var(--text-primary)' }}>Features</a>
-          <a href="#how-it-works" style={{ textDecoration: 'none', color: 'var(--text-primary)' }}>How it Works</a>
-          <a href="#contact" style={{ textDecoration: 'none', color: 'var(--text-primary)' }}>Contact</a>
+          <a href="#features" style={{ textDecoration: 'none', color: 'var(--text-primary)' }}>{t('features')}</a>
+          <a href="#how-it-works" style={{ textDecoration: 'none', color: 'var(--text-primary)' }}>{t('howItWorks')}</a>
+          <a href="#contact" style={{ textDecoration: 'none', color: 'var(--text-primary)' }}>{t('contact')}</a>
           <button 
             className="btn btn-outline"
             onClick={() => navigate('login')}
           >
-            Login
+            {t('login')}
           </button>
           <button 
             className="btn btn-primary"
             onClick={() => navigate('register')}
           >
-            Sign Up
+            {t('signUp')}
           </button>
         </div>
       </nav>
@@ -52,17 +54,17 @@ const LandingPage = () => {
         <div className="container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '50px', alignItems: 'center' }}>
           <div style={{ flex: 1 }}>
             <h1 style={{ fontSize: '48px', marginBottom: '20px', lineHeight: '1.2' }}>
-              Fast, Reliable Package<br />Delivery Platform
+              {t('fastReliableTitle')}
             </h1>
             <p style={{ fontSize: '18px', color: 'var(--text-secondary)', marginBottom: '30px' }}>
-              Contact us for a quote on our fast, reliable package delivery platform.
+              {t('fastReliableSubtitle')}
             </p>
             <button 
               className="btn btn-primary"
               style={{ padding: '15px 40px', fontSize: '16px' }}
               onClick={() => navigate('register')}
             >
-              Get Started
+              {t('readyToGetStarted')}
             </button>
           </div>
           <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
@@ -87,11 +89,11 @@ const LandingPage = () => {
           <div className="grid grid-2" style={{ maxWidth: '600px', margin: '0 auto' }}>
             <div className="card" style={{ textAlign: 'center' }}>
               <h2 style={{ fontSize: '48px', color: 'var(--primary-color)' }}>10K+</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>Deliveres</p>
+              <p style={{ color: 'var(--text-secondary)' }}>{t('deliveres')}</p>
             </div>
             <div className="card" style={{ textAlign: 'center' }}>
               <h2 style={{ fontSize: '48px', color: 'var(--primary-color)' }}>$5.99</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>Cost per Delivery</p>
+              <p style={{ color: 'var(--text-secondary)' }}>{t('costperDelivery')}</p>
             </div>
             
           </div>
@@ -102,23 +104,23 @@ const LandingPage = () => {
       <section id="features" style={{ padding: '60px 40px', backgroundColor: 'var(--card-background)' }}>
         <div className="container">
           <h2 style={{ textAlign: 'center', fontSize: '36px', marginBottom: '50px' }}>
-            Everything You Need for Delivery Management
+            {t('everythingYouNeed')}
           </h2>
           <div className="grid grid-3">
             <div className="card" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '40px', marginBottom: '20px' }}>⚡</div>
-              <h3 style={{ marginBottom: '15px' }}>Fast Delivery</h3>
-              <p>Deliveries are made within 2 hours of request. Track your deliveries in real-time.</p>
+              <h3 style={{ marginBottom: '15px' }}>{t('fastDelivery')}</h3>
+              <p>{t('deliveriesaremade')}</p>
             </div>
             <div className="card" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '40px', marginBottom: '20px' }}>💰</div>
-              <h3 style={{ marginBottom: '15px' }}>Cost per Delivery</h3>
-              <p>Compare prices and choose the best option for your needs.</p>
+              <h3 style={{ marginBottom: '15px' }}>{t('costperDelivery')}</h3>
+              <p>{t('comparepricesandchoose')}</p>
             </div>
             <div className="card" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '40px', marginBottom: '20px' }}>🚚</div>
-              <h3 style={{ marginBottom: '15px' }}>Quick Delivery</h3>
-              <p>Get your packages delivered to your doorstep in as little as 1 hour.</p>
+              <h3 style={{ marginBottom: '15px' }}>{t('quickDelivery')}</h3>
+              <p>{t('getyourpackagesdelivered')}</p>
             </div>
           </div>
         </div>
@@ -128,10 +130,10 @@ const LandingPage = () => {
       <section id="how-it-works" style={{ padding: '60px 40px' }}>
         <div className="container">
           <h2 style={{ textAlign: 'center', fontSize: '36px', marginBottom: '20px' }}>
-            How DeliverX Works
+            {t('howDeliverXWorks')}
           </h2>
           <p style={{ textAlign: 'center', color: 'var(--text-secondary)', marginBottom: '50px' }}>
-            Simple, fast, and efficient delivery service
+            {t('simplefastandefficient')}
           </p>
           <div className="grid grid-3">
             <div className="card" style={{ textAlign: 'center' }}>
@@ -147,8 +149,8 @@ const LandingPage = () => {
                 fontSize: '24px',
                 margin: '0 auto 20px'
               }}>1</div>
-              <h3>Create Request</h3>
-              <p>Create a delivery request with all the details you need.</p>
+              <h3>{t('createRequest')}</h3>
+              <p>{t('createadeliveryrequestwithall')}</p>
             </div>
             <div className="card" style={{ textAlign: 'center' }}>
               <div style={{
@@ -163,8 +165,8 @@ const LandingPage = () => {
                 fontSize: '24px',
                 margin: '0 auto 20px'
               }}>2</div>
-              <h3>Check Availability</h3>
-              <p>Check the availability of the delivery slots.</p>
+              <h3>{t('CheckAvailability')}</h3>
+              <p>{t('Checktheavailabilityof')}</p>
             </div>
             <div className="card" style={{ textAlign: 'center' }}>
               <div style={{
@@ -179,8 +181,8 @@ const LandingPage = () => {
                 fontSize: '24px',
                 margin: '0 auto 20px'
               }}>3</div>
-              <h3>Place Order</h3>
-              <p>Place your order online or call us for assistance.</p>
+              <h3>{t('PlaceOrder')}</h3>
+              <p>{t('Placeyourorderonline')}</p>
             </div>
           </div>
         </div>
@@ -189,7 +191,7 @@ const LandingPage = () => {
       {/* Call to Action */}
       <section style={{ padding: '80px 40px', backgroundColor: 'var(--primary-color)', color: 'white' }}>
         <div className="container" style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '36px', marginBottom: '20px' }}>Ready to Get Started?</h2>
+          <h2 style={{ fontSize: '36px', marginBottom: '20px' }}>{t('readyToGetStarted')}</h2>
           <button 
             className="btn"
             style={{
@@ -200,7 +202,7 @@ const LandingPage = () => {
             }}
             onClick={() => navigate('register')}
           >
-            Sign Up Now
+            {t('signUpNow')}
           </button>
         </div>
       </section>
@@ -211,7 +213,7 @@ const LandingPage = () => {
           <div className="grid grid-4" style={{ marginBottom: '40px' }}>
             <div>
               <h3 style={{ color: 'white', marginBottom: '20px' }}>DeliverX</h3>
-              <p style={{ color: '#94a3b8' }}>Fast, reliable package delivery platform</p>
+              <p style={{ color: '#94a3b8' }}>{t('fastReliableTitle')}</p>
             </div>
             <div>
               <h4 style={{ color: 'white', marginBottom: '15px' }}>Company</h4>
@@ -230,7 +232,7 @@ const LandingPage = () => {
               </ul>
             </div>
             <div>
-              <h4 style={{ color: 'white', marginBottom: '15px' }}>Follow Us</h4>
+              <h4 style={{ color: 'white', marginBottom: '15px' }}>{t('followUs')}</h4>
               <div style={{ display: 'flex', gap: '15px' }}>
                 <span style={{ color: '#94a3b8' }}>📱</span>
                 <span style={{ color: '#94a3b8' }}>💬</span>
@@ -239,7 +241,7 @@ const LandingPage = () => {
             </div>
           </div>
           <div style={{ textAlign: 'center', paddingTop: '30px', borderTop: '1px solid #334155', color: '#94a3b8' }}>
-            <p>Copyright © 2023 DeliverX | All Rights Reserved</p>
+            <p>{t('copyright')}</p>
           </div>
         </div>
       </footer>
