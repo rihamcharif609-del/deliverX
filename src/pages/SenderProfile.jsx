@@ -4,6 +4,7 @@ import MainLayout from '../layouts/MainLayout';
 import { useAuth } from '../context/AuthContext';
 import { useDelivery } from '../context/DeliveryContext';
 import StatusBadge from '../components/StatusBadge';
+import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
 
 const SenderProfile = ({ navigateTo, onProfileClick }) => {
   const { t } = useLanguage();
@@ -224,7 +225,7 @@ const SenderProfile = ({ navigateTo, onProfileClick }) => {
                 Cancel
               </button>
               <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Saving...' : t('saveChanges')}
+                {isSaving ? <LoadingSpinner inline label="Saving..." size={14} /> : t('saveChanges')}
               </button>
             </div>
           )}
@@ -235,9 +236,7 @@ const SenderProfile = ({ navigateTo, onProfileClick }) => {
             <span>Delivery History</span>
           </div>
           
-          {deliveriesLoading && (
-            <p style={{ color: 'var(--text-secondary)' }}>Loading delivery history...</p>
-          )}
+          <SectionLoading loading={deliveriesLoading} label="Loading delivery history..." minHeight="160px">
           {deliveriesError && (
             <p style={{ color: '#ef4444' }}>{deliveriesError}</p>
           )}
@@ -273,6 +272,7 @@ const SenderProfile = ({ navigateTo, onProfileClick }) => {
               </table>
             </div>
           )}
+          </SectionLoading>
         </div>
       </div>
     </MainLayout>

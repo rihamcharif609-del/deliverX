@@ -5,6 +5,7 @@ import StatCard from '../components/StatCard';
 import { useNavigate } from 'react-router-dom';
 import UserTable from '../components/UserTable';
 import { useLanguage } from '../context/LanguageContext';
+import { SectionLoading } from '../components/LoadingSpinner';
 
 const API_BASE_URL = 'http://localhost:8000/api/v1';
 
@@ -104,13 +105,7 @@ const Users = ({ setUserRole }) => {
           </div>
         </div>
 
-        {isLoading && (
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>Loading users...</p>
-        )}
-        {error && (
-          <p style={{ color: '#ef4444', marginBottom: '16px' }}>{error}</p>
-        )}
-
+        <SectionLoading loading={isLoading} label="Loading users..." minHeight="240px">
         <UserTable
           users={filteredUsers}
           showActions={true}
@@ -118,6 +113,10 @@ const Users = ({ setUserRole }) => {
             navigate(`/admin/users/${user.id}`, { state: { user } })
           }
         />
+        </SectionLoading>
+        {error && (
+          <p style={{ color: '#ef4444', marginBottom: '16px' }}>{error}</p>
+        )}
 
         <div className="pagination">
           <p className="pagination-info">Showing {filteredUsers.length} of {users.length} users</p>

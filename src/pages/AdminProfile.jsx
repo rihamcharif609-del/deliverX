@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import MainLayout from '../layouts/MainLayout';
 import { useAuth } from '../context/AuthContext';
+import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
 
 const API_BASE_URL = 'http://localhost:8000/api/v1';
 
@@ -30,6 +31,7 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
     totalRevenue: 0,
   });
   const [statsError, setStatsError] = useState('');
+  const [statsLoading, setStatsLoading] = useState(true);
   const fileInputRef = React.useRef(null);
 
   useEffect(() => {
@@ -39,6 +41,7 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
   useEffect(() => {
     const fetchStats = async () => {
       setStatsError('');
+      setStatsLoading(true);
 
       try {
         const { data } = await axios.get(`${API_BASE_URL}/admin/dashboard`);
@@ -51,6 +54,8 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
         });
       } catch (err) {
         setStatsError(err.response?.data?.message || 'Could not load admin statistics.');
+      } finally {
+        setStatsLoading(false);
       }
     };
 
@@ -173,6 +178,7 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
           <p style={{ color: '#ef4444', marginBottom: '16px' }}>{statsError}</p>
         )}
 
+        <SectionLoading loading={statsLoading} label="Loading admin statistics..." minHeight="120px">
         <div className="profile-stats-grid">
           <div className="profile-stat-card">
             <div className="profile-stat-value">{stats.totalUsers.toLocaleString()}</div>
@@ -191,6 +197,7 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
             <div className="profile-stat-label">Total Revenue</div>
           </div>
         </div>
+        </SectionLoading>
 
         <div className="profile-section">
           <div className="profile-section-title">
@@ -269,7 +276,7 @@ const AdminProfile = ({ navigateTo, onProfileClick }) => {
                 Cancel
               </button>
               <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Saving...' : t('saveChanges')}
+                {isSaving ? <LoadingSpinner inline label="Saving..." size={14} /> : t('saveChanges')}
               </button>
             </div>
           )}

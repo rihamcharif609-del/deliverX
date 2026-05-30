@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useDelivery } from '../context/DeliveryContext';
-import { FaLock, FaCreditCard, FaTimes, FaCheckCircle, FaSpinner, FaMapMarkerAlt, FaFileAlt } from 'react-icons/fa';
+import { FaLock, FaCreditCard, FaTimes, FaCheckCircle, FaMapMarkerAlt, FaFileAlt } from 'react-icons/fa';
+import LoadingSpinner from './LoadingSpinner';
 
 const PaymentModal = ({ isOpen, onClose, delivery }) => {
   const { t } = useLanguage();
@@ -259,7 +260,7 @@ const PaymentModal = ({ isOpen, onClose, delivery }) => {
                 >
                   {isSubmitting ? (
                     <>
-                      <FaSpinner className="spin" /> Processing...
+                      <LoadingSpinner inline label="Processing..." size={16} />
                     </>
                   ) : (
                     `Pay ${delivery.amount.toFixed(2)} MAD`

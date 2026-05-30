@@ -3,6 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import MainLayout from '../layouts/MainLayout';
 import { useNavigate } from 'react-router-dom';
 import { useDelivery } from '../context/DeliveryContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { calculatePrice } from '../utils/calculatePrice';
 
 const initialFormData = {
@@ -431,7 +432,7 @@ const CreateDelivery = () => {
             Cancel
           </button>
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Creating...' : t('submitRequest')}
+            {loading ? <LoadingSpinner inline label="Creating..." size={16} /> : t('submitRequest')}
           </button>
         </div>
       </form>

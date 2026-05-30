@@ -7,11 +7,12 @@ import { useNavigate } from 'react-router-dom';
 import SenderDeliveryTable from '../components/SenderDeliveryTable';
 import { useDelivery } from '../context/DeliveryContext';
 import { useAuth } from '../context/AuthContext';
+import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
 
 const SenderDashboard = ({ navigateTo }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { deliveries, fetchDeliveries } = useDelivery();
+  const { deliveries, deliveriesLoading, fetchDeliveries } = useDelivery();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,6 +26,18 @@ const SenderDashboard = ({ navigateTo }) => {
   const totalSpent = deliveries.reduce((sum, delivery) => (
     paidStatuses.has(delivery.paymentStatus) ? sum + Number(delivery.amount || 0) : sum
   ), 0);
+
+  const currentYear = new Date().getFullYear();
+  const monthlySpend = new Array(12).fill(0);
+  deliveries.forEach((d) => {
+    const dateStr = d.createdAt || d.date;
+    if (!dateStr) return;
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return;
+    if (date.getFullYear() === currentYear && paidStatuses.has(d.paymentStatus)) {
+      monthlySpend[date.getMonth()] += Number(d.amount || 0);
+    }
+  });
 
   const stats = [
     { title: 'Total Orders', value: String(deliveries.length), change: 'Your account', icon: 'DX', trend: 'positive' },
@@ -42,6 +55,7 @@ const SenderDashboard = ({ navigateTo }) => {
         </p>
       </div>
 
+      <SectionLoading loading={deliveriesLoading} label="Loading dashboard...">
       <div className="grid grid-4" style={{ marginBottom: '30px' }}>
         {stats.map((stat, index) => (
           <StatCard key={index} {...stat} />
@@ -49,7 +63,14 @@ const SenderDashboard = ({ navigateTo }) => {
       </div>
 
       <div className="grid grid-2" style={{ marginBottom: '30px' }}>
-        <ChartPlaceholder title="Delivery History" type="bar" />
+        <ChartPlaceholder 
+          title="Monthly Spend History" 
+          type="bar" 
+          values={monthlySpend}
+          subtitle={`Total Spent in ${currentYear}: ${monthlySpend.reduce((a, b) => a + b, 0).toFixed(2)} MAD (All-time: ${totalSpent.toFixed(2)} MAD)`}
+          legendLabel="Spent (MAD)"
+          color="var(--primary-color)"
+        />
         <div className="card">
           <h3 style={{ marginBottom: '20px' }}>Quick Actions</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
@@ -73,6 +94,7 @@ const SenderDashboard = ({ navigateTo }) => {
         </div>
         <SenderDeliveryTable deliveries={deliveries} limit={2} showActions={false} />
       </div>
+      </SectionLoading>
     </MainLayout>
   );
 };

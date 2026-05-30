@@ -5,16 +5,20 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useDelivery } from '../context/DeliveryContext';
 import { useAuth } from '../context/AuthContext';
+import LoadingSpinner from './LoadingSpinner';
 
 const Header = ({userRole = 'sender', darkMode, setDarkMode }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
   const {
     getNotificationsForRole,
     markAsRead,
     markAllAsRead,
     deleteNotification: contextDeleteNotification,
+    notificationsLoading,
+    notificationActionLoading,
   } = useDelivery();
 
   const roleNotifications = getNotificationsForRole(userRole);
@@ -65,8 +69,13 @@ const Header = ({userRole = 'sender', darkMode, setDarkMode }) => {
   }, [showProfileMenu]);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+    setLoggingOut(true);
+    try {
+      await logout();
+      navigate('/login');
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   // Notification action handlers
@@ -182,13 +191,19 @@ const Header = ({userRole = 'sender', darkMode, setDarkMode }) => {
               <div className="notification-menu-header">
                 <h3>Notifications</h3>
                 {unreadCount > 0 && (
-                  <button className="mark-all-read-btn" onClick={() => markAllAsRead(userRole)}>
-                    Mark all as read
+                  <button
+                    className="mark-all-read-btn"
+                    onClick={() => markAllAsRead(userRole)}
+                    disabled={notificationActionLoading}
+                  >
+                    {notificationActionLoading ? 'Updating...' : 'Mark all as read'}
                   </button>
                 )}
               </div>
               <div className="notification-list">
-                {roleNotifications.length === 0 ? (
+                {notificationsLoading ? (
+                  <LoadingSpinner centered label="Loading notifications..." minHeight="120px" />
+                ) : roleNotifications.length === 0 ? (
                   <p style={{ padding: '20px', color: 'gray', margin: 0, fontSize: '13px', textAlign: 'center' }}>
                     No notifications for {userRole}
                   </p>
@@ -261,10 +276,11 @@ const Header = ({userRole = 'sender', darkMode, setDarkMode }) => {
 
               <div
                 className="dropdown-item logout"
-                onClick={handleLogout}
+                onClick={loggingOut ? undefined : handleLogout}
+                style={loggingOut ? { opacity: 0.6, pointerEvents: 'none' } : undefined}
               >
                 <FaSignOutAlt />
-                <span>{t('logout')}</span>
+                <span>{loggingOut ? 'Signing out...' : t('logout')}</span>
               </div>
             </div>
           )}

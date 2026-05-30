@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCourierVerification } from '../context/CourierVerificationContext';
 import { useDelivery } from '../context/DeliveryContext';
 import { useAuth } from '../context/AuthContext';
+import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
 
 const DOC_CONFIG = [
   { key: 'cinImage', label: 'CIN Card Image' },
@@ -23,7 +24,10 @@ const CourierProfile = () => {
     fetchCourierRatings, 
     fetchDeliveries,
     fetchCourierWallet,
-    courierEarnings
+    courierEarnings,
+    deliveriesLoading,
+    walletLoading,
+    ratingsLoading,
   } = useDelivery();
   const {
     profile,
@@ -243,6 +247,7 @@ const CourierProfile = () => {
           </div>
         )}
 
+        <SectionLoading loading={walletLoading || ratingsLoading || deliveriesLoading} label="Loading courier stats..." minHeight="120px">
         <div className="profile-stats-grid">
           <div className="profile-stat-card">
             <div className="profile-stat-value">{totalEarnings.toFixed(2)} MAD</div>
@@ -257,6 +262,7 @@ const CourierProfile = () => {
             <div className="profile-stat-label">Completed Deliveries</div>
           </div>
         </div>
+        </SectionLoading>
 
         <div className="profile-section">
           <div className="profile-section-title">
@@ -435,7 +441,9 @@ const CourierProfile = () => {
                 onClick={handleSubmitVerification}
                 disabled={!profileComplete() || verificationLoading}
               >
-                {verificationLoading ? 'Submitting...' : 'Submit Profile for Verification'}
+                {verificationLoading ? (
+                  <LoadingSpinner inline label="Submitting..." size={14} />
+                ) : 'Submit Profile for Verification'}
               </button>
               {!profileComplete() && (
                 <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px', textAlign: 'center' }}>

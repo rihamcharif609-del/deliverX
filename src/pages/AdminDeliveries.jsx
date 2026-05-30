@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import MainLayout from '../layouts/MainLayout';
 import DeliveryTable from '../components/DeliveryTable';
 import DeliveryDetailModal from '../components/DeliveryDetailModal';
+import { SectionLoading } from '../components/LoadingSpinner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -102,6 +103,7 @@ const AdminDeliveries = ({ setUserRole, userRole }) => {
         </div>
         
       </div>
+      <SectionLoading loading={deliveriesLoading} label="Loading deliveries..." minHeight="280px">
       <DeliveryTable
         deliveries={deliveries}
         selectedFilter={activeFilter}
@@ -110,9 +112,7 @@ const AdminDeliveries = ({ setUserRole, userRole }) => {
         onViewDetails={setSelectedDelivery}
         onDataChange={(data) => { tableDataRef.current = data; }}
       />
-      {deliveriesLoading && (
-        <p style={{ marginTop: '16px', color: 'var(--text-secondary)' }}>Loading deliveries...</p>
-      )}
+      </SectionLoading>
       {deliveriesError && (
         <p style={{ marginTop: '16px', color: '#ef4444' }}>{deliveriesError}</p>
       )}

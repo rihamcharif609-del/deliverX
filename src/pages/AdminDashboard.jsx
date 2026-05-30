@@ -21,6 +21,7 @@ import {
   FaFileInvoiceDollar,
   FaSpinner
 } from 'react-icons/fa';
+import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
 
 const AdminDashboard = ({ setUserRole }) => {
   const { t } = useLanguage();
@@ -35,8 +36,13 @@ const AdminDashboard = ({ setUserRole }) => {
     adminRatingSummary,
     adminWithdrawals,
     fetchAdminWithdrawals,
-    decideWithdrawal
+    decideWithdrawal,
+    deliveriesLoading,
+    adminDashboardLoading,
+    withdrawalsLoading,
   } = useDelivery();
+
+  const dashboardLoading = deliveriesLoading || adminDashboardLoading || withdrawalsLoading;
 
   const [recentUsers, setRecentUsers] = useState([]);
 
@@ -191,6 +197,7 @@ const AdminDashboard = ({ setUserRole }) => {
       </div>
 
       {/* CORE FINANCIAL ANALYTICS CARDS */}
+      <SectionLoading loading={dashboardLoading} label="Loading admin dashboard..." minHeight="420px">
       <div style={{ marginBottom: '20px' }}>
         <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '15px' }}>Morocco Gateway Financial Overview</h3>
       </div>
@@ -629,6 +636,7 @@ const AdminDashboard = ({ setUserRole }) => {
           </div>
         </div>
       </div>
+      </SectionLoading>
 
       {/* DISPUTE REFUND CONFIRMATION MODAL */}
       {showRefundModal && refundTargetOrder && (

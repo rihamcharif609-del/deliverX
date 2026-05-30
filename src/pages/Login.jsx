@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import AuthLayout from '../layouts/AuthLayout';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const roleRoutes = {
   admin: '/admin',
@@ -108,7 +109,7 @@ const Login = () => {
           style={{ width: '100%', marginBottom: '20px' }}
           disabled={loading}
         >
-          {loading ? 'Signing in...' : 'Sign In'}
+          {loading ? <LoadingSpinner inline label="Signing in..." size={16} /> : 'Sign In'}
         </button>
 
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>

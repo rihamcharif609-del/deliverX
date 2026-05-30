@@ -1,6 +1,13 @@
 import React from 'react';
 
-const ChartPlaceholder = ({ title, type = 'bar', values: customValues, subtitle: customSubtitle }) => {
+const ChartPlaceholder = ({ 
+  title, 
+  type = 'bar', 
+  values: customValues, 
+  subtitle: customSubtitle,
+  legendLabel = 'Revenue (MAD)',
+  color = 'blue'
+}) => {
   if (type === 'bar') {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const defaultValues = [45000, 52000, 48000, 58000, 62000, 71000, 68000, 73000, 79000, 82000, 85000, 92000];
@@ -11,6 +18,8 @@ const ChartPlaceholder = ({ title, type = 'bar', values: customValues, subtitle:
     const maxValue = Math.max(...values, 1);
     const heightScale = 160 / maxValue;
 
+    const isCustomColor = color && (color.startsWith('#') || color.startsWith('rgb') || color.startsWith('hsl') || color.startsWith('var'));
+
     return (
       <div className="chart-placeholder">
         <div className="chart-header">
@@ -20,8 +29,11 @@ const ChartPlaceholder = ({ title, type = 'bar', values: customValues, subtitle:
           </div>
           <div className="chart-legend">
             <div className="legend-item">
-              <div className="legend-color blue"></div>
-              <span>Revenue (MAD)</span>
+              <div 
+                className={isCustomColor ? "legend-color" : `legend-color ${color}`} 
+                style={isCustomColor ? { backgroundColor: color } : undefined}
+              ></div>
+              <span>{legendLabel}</span>
             </div>
           </div>
         </div>
@@ -31,12 +43,15 @@ const ChartPlaceholder = ({ title, type = 'bar', values: customValues, subtitle:
             return (
               <div key={month} className="bar-container">
                 <div 
-                  className="bar" 
+                  className={isCustomColor ? "bar" : `bar ${color}`} 
                   title={`${values[index].toFixed(2)} MAD`}
                   style={{ 
                     height: `${barHeight}px`,
                     transition: 'height 0.3s ease',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    background: isCustomColor 
+                      ? `linear-gradient(to top, ${color}, ${color}dd)` 
+                      : undefined
                   }}
                 ></div>
                 <span className="bar-label">{month}</span>

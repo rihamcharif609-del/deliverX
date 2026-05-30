@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import MainLayout from '../layouts/MainLayout';
 import { useCourierVerification } from '../context/CourierVerificationContext';
 import { useDelivery } from '../context/DeliveryContext';
+import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
 
 const DOC_LABELS = {
   cinImage: 'CIN Card',
@@ -106,9 +107,7 @@ const AdminCourierVerification = ({ setUserRole }) => {
       )}
 
       {verificationLoading && !selected ? (
-        <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
-          <p style={{ color: 'var(--text-secondary)' }}>Loading courier requests...</p>
-        </div>
+        <LoadingSpinner centered label="Loading courier requests..." minHeight="240px" />
       ) : selected && (
       <div className="card" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>

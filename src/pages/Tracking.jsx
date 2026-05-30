@@ -2,20 +2,48 @@ import React, { useState } from 'react';
 import MainLayout from '../layouts/MainLayout';
 import StatusBadge from '../components/StatusBadge';
 import { useParams, useNavigate } from 'react-router-dom';
-import ChatPopup from '../components/ChatPopup';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useDelivery } from '../context/DeliveryContext';
 import PaymentModal from '../components/PaymentModal';
-import { FaCreditCard, FaLock, FaKey, FaBox, FaArrowLeft, FaMapMarkerAlt, FaCalendarAlt, FaEnvelope, FaPhoneAlt } from 'react-icons/fa';
+import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
+import { FaCreditCard, FaLock, FaKey, FaBox, FaArrowLeft, FaMapMarkerAlt, FaCalendarAlt, FaEnvelope, FaPhoneAlt, FaWhatsapp } from 'react-icons/fa';
 
 const ADMIN_SUPPORT_EMAIL = 'admin@deliverx.com';
+const ADMIN_SUPPORT_PHONE = '+212 600-000000';
+
+const cleanPhone = (phone) => {
+  let num = phone ? phone.replace(/\D/g, '') : '';
+  if (num.startsWith('0') && num.length === 10) {
+    num = '212' + num.slice(1);
+  } else if (num.length === 9) {
+    num = '212' + num;
+  }
+  return num;
+};
+
+const openWhatsApp = (phone, message) => {
+  if (!phone) return;
+  const url = `https://wa.me/${cleanPhone(phone)}?text=${encodeURIComponent(message)}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
+
+const whatsappButtonStyle = {
+  width: '100%',
+  marginBottom: '10px',
+  borderRadius: '10px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '8px',
+  borderColor: '#25d366',
+  color: '#25d366',
+};
 
 const Tracking = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { deliveries, fetchDeliveries, rateCourier, cancelDelivery } = useDelivery();
-  const [showChat, setShowChat] = useState(false);
+  const { deliveries, deliveriesLoading, fetchDeliveries, rateCourier, cancelDelivery, cancellingDeliveryId, ratingDeliveryId } = useDelivery();
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const { darkMode } = useTheme();
   const { t } = useLanguage();
@@ -49,7 +77,7 @@ const Tracking = () => {
     : deliveries.find(d => hasCourier(d) && d.status !== 'cancelled') || deliveries[0];
 
   const courierName = delivery?.courier || 'Courier';
-  const courierPhone = delivery?.courierPhone || delivery?.phone || '+212 660-000000';
+  const courierPhone = delivery?.courierPhone || '+212 660-000000';
   const courierEmail = delivery?.courierEmail || 'courier@deliverx.com';
   const courierInitials = courierName
     .split(' ')
@@ -62,6 +90,15 @@ const Tracking = () => {
     ? new Date(delivery.acceptedAt).toLocaleString()
     : 'Accepted for this delivery';
   const supportHref = `mailto:${ADMIN_SUPPORT_EMAIL}?subject=${encodeURIComponent(`Support request for ${delivery?.id || 'delivery'}`)}&body=${encodeURIComponent(`Hello Admin,\n\nI need help with delivery ${delivery?.id || ''}.`)}`;
+  const isRatingSaving = ratingSaving || ratingDeliveryId === delivery?.id;
+
+  if (deliveriesLoading && !delivery) {
+    return (
+      <MainLayout userRole="sender" activePage="/sender/tracking">
+        <LoadingSpinner centered label="Loading tracking details..." minHeight="360px" />
+      </MainLayout>
+    );
+  }
 
   if (!delivery) {
     return (
@@ -585,20 +622,15 @@ const Tracking = () => {
                 >
                   <FaPhoneAlt size={12} /> {courierPhone}
                 </button>
-                <button 
-                  className="btn btn-outline" 
-                  onClick={() => setShowChat(true)} 
-                  style={{
-                    width: '100%',
-                    marginBottom: '10px',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px'
-                  }}
+                <button
+                  className="btn btn-outline"
+                  onClick={() => openWhatsApp(
+                    courierPhone,
+                    `Hello, I am tracking my delivery request #${delivery?.id || ''}.`
+                  )}
+                  style={whatsappButtonStyle}
                 >
-                  <FaEnvelope size={12} /> {t('messageCourier') || 'Message Courier'}
+                  <FaWhatsapp size={14} /> {t('messageCourier')}
                 </button>
               </>
             ) : (
@@ -698,7 +730,7 @@ const Tracking = () => {
                   
                   <button
                     className="btn btn-primary"
-                    disabled={ratingInput === 0 || ratingSaving}
+                    disabled={ratingInput === 0 || isRatingSaving}
                     onClick={async () => {
                       setRatingError('');
                       setRatingSaving(true);
@@ -715,14 +747,16 @@ const Tracking = () => {
                       width: '100%',
                       padding: '10px 0',
                       borderRadius: '10px',
-                      backgroundColor: ratingInput === 0 || ratingSaving ? 'var(--border-color)' : '#2563eb',
-                      borderColor: ratingInput === 0 || ratingSaving ? 'var(--border-color)' : '#2563eb',
+                      backgroundColor: ratingInput === 0 || isRatingSaving ? 'var(--border-color)' : '#2563eb',
+                      borderColor: ratingInput === 0 || isRatingSaving ? 'var(--border-color)' : '#2563eb',
                       fontWeight: '600',
-                      cursor: ratingInput === 0 || ratingSaving ? 'not-allowed' : 'pointer',
+                      cursor: ratingInput === 0 || isRatingSaving ? 'not-allowed' : 'pointer',
                       transition: 'all 0.2s'
                     }}
                   >
-                    {ratingSaving ? 'Saving...' : 'Submit Rating'}
+                    {isRatingSaving ? (
+                      <LoadingSpinner inline label="Saving rating..." size={14} />
+                    ) : 'Submit Rating'}
                   </button>
                 </div>
               )}
@@ -751,6 +785,17 @@ const Tracking = () => {
               <FaEnvelope size={12} /> {t('contactSupport') || 'Contact Support'}
             </button>
 
+            <button
+              className="btn btn-outline"
+              onClick={() => openWhatsApp(
+                ADMIN_SUPPORT_PHONE,
+                `Hello Admin, I need support with my delivery request #${delivery?.id || ''}.`
+              )}
+              style={whatsappButtonStyle}
+            >
+              <FaWhatsapp size={14} /> {t('messageAdmin')}
+            </button>
+
             {delivery.status !== 'cancelled' && delivery.status !== 'delivered' && (
               <button
                 className="btn btn-outline"
@@ -759,9 +804,12 @@ const Tracking = () => {
                   color: 'red',
                   borderRadius: '10px'
                 }}
+                disabled={cancellingDeliveryId === delivery.id}
                 onClick={handleCancelDelivery}
               >
-                {t('cancelDelivery') || 'Cancel Delivery'}
+                {cancellingDeliveryId === delivery.id ? (
+                  <LoadingSpinner inline label="Cancelling..." size={14} />
+                ) : (t('cancelDelivery') || 'Cancel Delivery')}
               </button>
             )}
           </div>
@@ -903,11 +951,6 @@ const Tracking = () => {
           </div>
         ))}
       </div>
-
-      <ChatPopup
-        isOpen={showChat}
-        onClose={() => setShowChat(false)}
-      />
 
       {/* Payment Gateway Modal */}
       <PaymentModal 

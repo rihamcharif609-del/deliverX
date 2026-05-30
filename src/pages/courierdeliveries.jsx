@@ -5,6 +5,7 @@ import { useDelivery } from '../context/DeliveryContext';
 import { useEffect } from 'react';
 import CourierDeliveryTable from '../components/CourierDeliveryTable';
 import DeliveryDetailModal from '../components/DeliveryDetailModal';
+import { SectionLoading } from '../components/LoadingSpinner';
 
 
 const CourierDeliveries = ({ navigateTo, userRole }) => {
@@ -44,15 +45,14 @@ const [selectedDelivery, setSelectedDelivery] = React.useState(null);
     
       </div>
 
+<SectionLoading loading={deliveriesLoading} label="Loading deliveries..." minHeight="280px">
 <CourierDeliveryTable 
   selectedFilter={activeFilter}
   searchQuery={searchQuery}
   showActions={false} 
   onViewDetails={setSelectedDelivery}
 />
-      {deliveriesLoading && (
-        <p style={{ marginTop: '16px', color: 'var(--text-secondary)' }}>Loading deliveries...</p>
-      )}
+</SectionLoading>
       {deliveriesError && (
         <p style={{ marginTop: '16px', color: '#ef4444' }}>{deliveriesError}</p>
       )}

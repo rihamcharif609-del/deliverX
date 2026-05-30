@@ -222,6 +222,15 @@ export const DeliveryProvider = ({ children }) => {
   const [deliveries, setDeliveries] = useState([]);
   const [deliveriesLoading, setDeliveriesLoading] = useState(false);
   const [deliveriesError, setDeliveriesError] = useState('');
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [ratingsLoading, setRatingsLoading] = useState(false);
+  const [adminDashboardLoading, setAdminDashboardLoading] = useState(false);
+  const [withdrawalsLoading, setWithdrawalsLoading] = useState(false);
+  const [acceptingDeliveryId, setAcceptingDeliveryId] = useState(null);
+  const [cancellingDeliveryId, setCancellingDeliveryId] = useState(null);
+  const [ratingDeliveryId, setRatingDeliveryId] = useState(null);
+  const [notificationActionLoading, setNotificationActionLoading] = useState(false);
 
   const [couriers] = useState(() => {
     try {
@@ -282,10 +291,16 @@ export const DeliveryProvider = ({ children }) => {
       return [];
     }
 
-    const { data } = await axios.get(`${API_BASE_URL}/notifications`);
-    const mapped = Array.isArray(data.data) ? data.data.map(mapNotificationFromApi) : [];
-    setNotifications(mapped);
-    return mapped;
+    setNotificationsLoading(true);
+
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/notifications`);
+      const mapped = Array.isArray(data.data) ? data.data.map(mapNotificationFromApi) : [];
+      setNotifications(mapped);
+      return mapped;
+    } finally {
+      setNotificationsLoading(false);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -332,24 +347,42 @@ export const DeliveryProvider = ({ children }) => {
   }, []);
 
   const fetchCourierRatings = useCallback(async () => {
-    const { data } = await axios.get(`${API_BASE_URL}/courier/ratings`);
-    const mapped = mapCourierRatingSummary(data.data || {});
-    setCourierRatingSummary(mapped);
-    return mapped;
+    setRatingsLoading(true);
+
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/courier/ratings`);
+      const mapped = mapCourierRatingSummary(data.data || {});
+      setCourierRatingSummary(mapped);
+      return mapped;
+    } finally {
+      setRatingsLoading(false);
+    }
   }, []);
 
   const fetchCourierWallet = useCallback(async () => {
-    const { data } = await axios.get(`${API_BASE_URL}/courier/wallet`);
-    const mapped = mapCourierWalletFromApi(data.data || {});
-    setCourierEarnings(mapped);
-    return mapped;
+    setWalletLoading(true);
+
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/courier/wallet`);
+      const mapped = mapCourierWalletFromApi(data.data || {});
+      setCourierEarnings(mapped);
+      return mapped;
+    } finally {
+      setWalletLoading(false);
+    }
   }, []);
 
   const fetchAdminWithdrawals = useCallback(async () => {
-    const { data } = await axios.get(`${API_BASE_URL}/admin/withdrawals`);
-    const mapped = Array.isArray(data.data) ? data.data.map(mapWithdrawalFromApi) : [];
-    setAdminWithdrawals(mapped);
-    return mapped;
+    setWithdrawalsLoading(true);
+
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/admin/withdrawals`);
+      const mapped = Array.isArray(data.data) ? data.data.map(mapWithdrawalFromApi) : [];
+      setAdminWithdrawals(mapped);
+      return mapped;
+    } finally {
+      setWithdrawalsLoading(false);
+    }
   }, []);
 
   const decideWithdrawal = useCallback(async (withdrawalId, status) => {
@@ -364,26 +397,32 @@ export const DeliveryProvider = ({ children }) => {
   }, []);
 
   const fetchAdminDashboard = useCallback(async () => {
-    const { data } = await axios.get(`${API_BASE_URL}/admin/dashboard`);
-    const rows = data.data || {};
-    const ratings = mapAdminRatingSummary(rows.ratings || {});
+    setAdminDashboardLoading(true);
 
-    setAdminRatingSummary(ratings);
-    setAdminAnalytics(prev => ({
-      ...prev,
-      totalRevenue: Number(rows.total_revenue ?? prev.totalRevenue ?? 0),
-      platformProfit: Number(rows.platform_profit ?? prev.platformProfit ?? 0),
-      courierEarnings: Number(rows.courier_earnings ?? prev.courierEarnings ?? 0),
-      pendingPayments: Number(rows.held_in_escrow ?? prev.pendingPayments ?? 0),
-      releasedPayments: Number(rows.released_payouts ?? prev.releasedPayments ?? 0),
-      refunds: Number(rows.refunds_issued ?? prev.refunds ?? 0),
-      monthlyRevenue: Array.isArray(rows.monthly_revenue) ? rows.monthly_revenue : (prev.monthlyRevenue || []),
-    }));
+    try {
+      const { data } = await axios.get(`${API_BASE_URL}/admin/dashboard`);
+      const rows = data.data || {};
+      const ratings = mapAdminRatingSummary(rows.ratings || {});
 
-    return {
-      ...rows,
-      ratings,
-    };
+      setAdminRatingSummary(ratings);
+      setAdminAnalytics(prev => ({
+        ...prev,
+        totalRevenue: Number(rows.total_revenue ?? prev.totalRevenue ?? 0),
+        platformProfit: Number(rows.platform_profit ?? prev.platformProfit ?? 0),
+        courierEarnings: Number(rows.courier_earnings ?? prev.courierEarnings ?? 0),
+        pendingPayments: Number(rows.held_in_escrow ?? prev.pendingPayments ?? 0),
+        releasedPayments: Number(rows.released_payouts ?? prev.releasedPayments ?? 0),
+        refunds: Number(rows.refunds_issued ?? prev.refunds ?? 0),
+        monthlyRevenue: Array.isArray(rows.monthly_revenue) ? rows.monthly_revenue : (prev.monthlyRevenue || []),
+      }));
+
+      return {
+        ...rows,
+        ratings,
+      };
+    } finally {
+      setAdminDashboardLoading(false);
+    }
   }, []);
 
   // 1. Create a delivery request (Sender)
@@ -453,6 +492,9 @@ export const DeliveryProvider = ({ children }) => {
 
   // 2. Accept a delivery (Courier)
   const acceptDelivery = async (deliveryId, courierName = 'Courier') => {
+    setAcceptingDeliveryId(deliveryId);
+
+    try {
     if (String(deliveryId).startsWith('DEL-260529-CAS')) {
       const mockAccepted = {
         id: deliveryId,
@@ -509,6 +551,9 @@ export const DeliveryProvider = ({ children }) => {
     });
 
     return acceptedDelivery;
+    } finally {
+      setAcceptingDeliveryId(null);
+    }
   };
 
   // 3. Process payment (Sender)
@@ -595,6 +640,9 @@ export const DeliveryProvider = ({ children }) => {
   };
 
   const cancelDelivery = async (deliveryId) => {
+    setCancellingDeliveryId(deliveryId);
+
+    try {
     const target = deliveries.find((delivery) => delivery.id === deliveryId);
     const apiId = target?.apiId || deliveryId;
 
@@ -626,6 +674,9 @@ export const DeliveryProvider = ({ children }) => {
       path: '/admin/deliveries',
       deliveryId,
     });
+    } finally {
+      setCancellingDeliveryId(null);
+    }
   };
 
   // 5. Confirm Delivery via OTP (Courier + automatic payout release)
@@ -834,6 +885,8 @@ export const DeliveryProvider = ({ children }) => {
   const getNotificationsForRole = () => notifications;
 
   const markAsRead = async (id) => {
+    setNotificationActionLoading(true);
+
     setNotifications(prev =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
@@ -842,20 +895,28 @@ export const DeliveryProvider = ({ children }) => {
       await axios.patch(`${API_BASE_URL}/notifications/${id}/read`);
     } catch (err) {
       console.warn('Could not mark notification as read.', err);
+    } finally {
+      setNotificationActionLoading(false);
     }
   };
 
   const markAllAsRead = async () => {
+    setNotificationActionLoading(true);
     setNotifications(prev => prev.map((n) => ({ ...n, isRead: true })));
 
     try {
       await axios.patch(`${API_BASE_URL}/notifications/read-all`);
     } catch (err) {
       console.warn('Could not mark all notifications as read.', err);
+    } finally {
+      setNotificationActionLoading(false);
     }
   };
 
   const rateCourier = async (deliveryId, ratingValue, comment) => {
+    setRatingDeliveryId(deliveryId);
+
+    try {
     const target = deliveries.find((delivery) => delivery.id === deliveryId);
     const apiId = target?.apiId || deliveryId;
     const { data } = await axios.post(`${API_BASE_URL}/sender/deliveries/${apiId}/rating`, {
@@ -876,9 +937,13 @@ export const DeliveryProvider = ({ children }) => {
     )));
 
     return savedRating;
+    } finally {
+      setRatingDeliveryId(null);
+    }
   };
 
   const deleteNotification = async (id) => {
+    setNotificationActionLoading(true);
     const previous = notifications;
     setNotifications(prev => prev.filter(n => n.id !== id));
 
@@ -887,6 +952,8 @@ export const DeliveryProvider = ({ children }) => {
     } catch (err) {
       setNotifications(previous);
       console.warn('Could not delete notification.', err);
+    } finally {
+      setNotificationActionLoading(false);
     }
   };
 
@@ -895,6 +962,15 @@ export const DeliveryProvider = ({ children }) => {
       deliveries,
       deliveriesLoading,
       deliveriesError,
+      notificationsLoading,
+      walletLoading,
+      ratingsLoading,
+      adminDashboardLoading,
+      withdrawalsLoading,
+      acceptingDeliveryId,
+      cancellingDeliveryId,
+      ratingDeliveryId,
+      notificationActionLoading,
       courierEarnings,
       adminAnalytics,
       courierRatingSummary,

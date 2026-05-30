@@ -5,6 +5,7 @@ import { useDelivery } from '../context/DeliveryContext';
 import MainLayout from '../layouts/MainLayout';
 import SenderDeliveryTable from '../components/SenderDeliveryTable';
 import PaymentModal from '../components/PaymentModal';
+import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
 
 const SenderDeliveries = ({ userRole }) => {
   const { t } = useLanguage();
@@ -92,15 +93,14 @@ const SenderDeliveries = ({ userRole }) => {
         </div>
       </div>
 
+      <SectionLoading loading={deliveriesLoading} label="Loading deliveries..." minHeight="280px">
       <SenderDeliveryTable  
         deliveries={deliveries}
         selectedFilter={activeFilter} 
         searchQuery={searchQuery}
         onPayClick={handleOpenPayment}
       />
-      {deliveriesLoading && (
-        <p style={{ marginTop: '16px', color: 'var(--text-secondary)' }}>Loading deliveries...</p>
-      )}
+      </SectionLoading>
       {deliveriesError && (
         <p style={{ marginTop: '16px', color: '#ef4444' }}>{deliveriesError}</p>
       )}

@@ -4,13 +4,15 @@ import { useDelivery } from '../context/DeliveryContext';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
 import { FaMapMarkerAlt, FaWeightHanging, FaRoute, FaClock, FaCheckCircle, FaBox } from 'react-icons/fa';
+import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
 
 const AvailableDeliveries = () => {
   const { t } = useLanguage();
-  const { deliveries, deliveriesError, deliveriesLoading, acceptDelivery, fetchDeliveries } = useDelivery();
+  const { deliveries, deliveriesError, deliveriesLoading, acceptDelivery, acceptingDeliveryId, fetchDeliveries } = useDelivery();
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('distance');
+  const [acceptError, setAcceptError] = useState('');
 
   useEffect(() => {
     fetchDeliveries('available').catch(() => {});
@@ -42,8 +44,13 @@ const AvailableDeliveries = () => {
   });
 
   const handleAcceptDelivery = async (deliveryId) => {
-    await acceptDelivery(deliveryId);
-    navigate('/courier/deliveries');
+    setAcceptError('');
+    try {
+      await acceptDelivery(deliveryId);
+      navigate('/courier/deliveries');
+    } catch {
+      setAcceptError('Could not accept this delivery. Please try again.');
+    }
   };
 
   const getPackageBadge = (packageType) => {
@@ -172,16 +179,17 @@ const AvailableDeliveries = () => {
           </div>
         </div>
 
+        <SectionLoading loading={deliveriesLoading} label="Loading available deliveries..." minHeight="320px">
         <div className="deliveries-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
           gap: '20px'
         }}>
-          {deliveriesLoading && (
-            <p style={{ color: 'var(--text-secondary)' }}>Loading deliveries...</p>
-          )}
           {deliveriesError && (
             <p style={{ color: '#ef4444' }}>{deliveriesError}</p>
+          )}
+          {acceptError && (
+            <p style={{ color: '#ef4444', gridColumn: '1 / -1' }}>{acceptError}</p>
           )}
           {sortedDeliveries.map((delivery) => (
             <div key={delivery.id} className="delivery-card" style={{
@@ -267,15 +275,16 @@ const AvailableDeliveries = () => {
               <button 
                 className="btn btn-primary accept-btn"
                 onClick={() => handleAcceptDelivery(delivery.id)}
+                disabled={acceptingDeliveryId === delivery.id}
                 style={{
                   width: '100%',
                   padding: '12px',
                   borderRadius: '12px',
                   border: 'none',
-                  backgroundColor: '#2563eb',
+                  backgroundColor: acceptingDeliveryId === delivery.id ? 'var(--border-color)' : '#2563eb',
                   color: '#fff',
                   fontWeight: '600',
-                  cursor: 'pointer',
+                  cursor: acceptingDeliveryId === delivery.id ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -283,7 +292,13 @@ const AvailableDeliveries = () => {
                   transition: 'background-color 0.2s'
                 }}
               >
-                <FaCheckCircle /> Accept Delivery
+                {acceptingDeliveryId === delivery.id ? (
+                  <LoadingSpinner inline label="Accepting..." size={14} />
+                ) : (
+                  <>
+                    <FaCheckCircle /> Accept Delivery
+                  </>
+                )}
               </button>
             </div>
           ))}
@@ -303,6 +318,7 @@ const AvailableDeliveries = () => {
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Check back later or switch roles to create a new delivery request!</p>
           </div>
         )}
+        </SectionLoading>
       </div>
     </MainLayout>
   );

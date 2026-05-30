@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import MainLayout from '../layouts/MainLayout';
+import LoadingSpinner from '../components/LoadingSpinner';
 import StatusBadge from '../components/StatusBadge';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -101,9 +102,7 @@ const UserProfile = () => {
   if (isLoading) {
     return (
       <MainLayout userRole="admin" activePage="/admin/users">
-        <div className="card" style={{ padding: '40px', textAlign: 'center' }}>
-          Loading user profile...
-        </div>
+        <LoadingSpinner centered label="Loading user profile..." minHeight="360px" />
       </MainLayout>
     );
   }

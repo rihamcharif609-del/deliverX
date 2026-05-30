@@ -1635,6 +1635,30 @@ table tr:hover {
   animation: fa-spin 1s infinite linear;
 }
 
+.loading-spinner-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.loading-spinner-wrap.inline {
+  flex-direction: row;
+  padding: 0;
+  display: inline-flex;
+  color: inherit;
+}
+
+.loading-spinner-wrap.full-page {
+  min-height: 100vh;
+  width: 100%;
+  background: var(--background, #f8fafc);
+}
+
 @keyframes fa-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }

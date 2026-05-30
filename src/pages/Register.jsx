@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import AuthLayout from '../layouts/AuthLayout';
 import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const REGISTER_URL = 'http://localhost:8000/api/v1/auth/register';
 
@@ -217,7 +218,7 @@ const Register = () => {
           style={{ width: '100%', marginBottom: '20px' }}
           disabled={loading}
         >
-          {loading ? 'Creating account...' : 'Sign Up'}
+          {loading ? <LoadingSpinner inline label="Creating account..." size={16} /> : 'Sign Up'}
         </button>
 
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>

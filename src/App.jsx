@@ -22,6 +22,7 @@ import AdminCourierVerification from './pages/AdminCourierVerification';
 import { DeliveryProvider } from './context/DeliveryContext';
 import { CourierVerificationProvider, useCourierVerification } from './context/CourierVerificationContext';
 import { useAuth } from './context/AuthContext';
+import LoadingSpinner from './components/LoadingSpinner';
 import './styles/profile.css';
 import React from 'react';
 
@@ -36,7 +37,7 @@ const RequireAuth = ({ allowedRoles, children }) => {
   const location = useLocation();
 
   if (initializing) {
-    return null;
+    return <LoadingSpinner fullPage label="Loading DeliverX..." />;
   }
 
   if (!isAuthenticated) {
@@ -54,7 +55,7 @@ const PublicAuthRoute = ({ children }) => {
   const { initializing, isAuthenticated, userRole } = useAuth();
 
   if (initializing) {
-    return null;
+    return <LoadingSpinner fullPage label="Loading DeliverX..." />;
   }
 
   if (isAuthenticated) {

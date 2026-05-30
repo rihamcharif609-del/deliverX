@@ -20,6 +20,7 @@ import {
   FaIdCard, 
   FaMoneyCheckAlt 
 } from 'react-icons/fa';
+import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
 
 const CourierDashboard = () => {
   const { t } = useLanguage();
@@ -33,11 +34,17 @@ const CourierDashboard = () => {
     fetchDeliveries,
     fetchCourierRatings,
     fetchCourierWallet,
-    courierRatingSummary
+    courierRatingSummary,
+    deliveriesLoading,
+    walletLoading,
+    ratingsLoading,
+    acceptingDeliveryId,
   } = useDelivery();
   const currentCourierName = user?.name || 'Courier';
 
   const [availableDeliveries, setAvailableDeliveries] = useState([]);
+  const [availableLoading, setAvailableLoading] = useState(false);
+  const dashboardLoading = deliveriesLoading || walletLoading || ratingsLoading;
 
   useEffect(() => {
     fetchDeliveries('courier').catch(() => {});
@@ -46,6 +53,7 @@ const CourierDashboard = () => {
 
     // Fetch available deliveries nearby
     const fetchAvailable = async () => {
+      setAvailableLoading(true);
       try {
         const response = await axios.get('http://localhost:8000/api/v1/courier/deliveries/available');
         const rows = Array.isArray(response.data.data) ? response.data.data : [];
@@ -125,6 +133,8 @@ const CourierDashboard = () => {
           }
         ];
         setAvailableDeliveries(mockAvailable);
+      } finally {
+        setAvailableLoading(false);
       }
     };
 
@@ -166,6 +176,20 @@ const CourierDashboard = () => {
     .filter(d => d.date === todayStr)
     .reduce((sum, d) => sum + (d.amount - d.commission), 0);
 
+  const currentYear = new Date().getFullYear();
+  const monthlyEarnings = new Array(12).fill(0);
+  myDeliveries.forEach((d) => {
+    const dateStr = d.createdAt || d.date;
+    if (!dateStr) return;
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return;
+    if (date.getFullYear() === currentYear && ['held', 'released'].includes(d.paymentStatus)) {
+      const amount = Number(d.amount || 0);
+      const commission = Number(d.commission || 0);
+      monthlyEarnings[date.getMonth()] += (amount - commission);
+    }
+  });
+
   // Dynamic stats for cards
   const stats = [
     { title: 'Completed Today', value: completedTodayCount.toString(), change: '+2', icon: '✅', trend: 'positive' },
@@ -174,8 +198,8 @@ const CourierDashboard = () => {
     { title: 'Courier Rating', value: String(myCourierInfo.rating.toFixed(1)), change: `${myCourierInfo.ratingsCount} reviews`, icon: '⭐', trend: 'positive' },
   ];
 
-  const handleAcceptNearby = (id) => {
-    acceptDelivery(id, currentCourierName);
+  const handleAcceptNearby = async (id) => {
+    await acceptDelivery(id, currentCourierName);
     navigate('/courier/deliveries');
   };
 
@@ -233,6 +257,7 @@ const CourierDashboard = () => {
       </div>
 
       {/* STATS OVERVIEW CARDS */}
+      <SectionLoading loading={dashboardLoading} label="Loading courier dashboard..." minHeight="360px">
       <div className="grid grid-4" style={{ marginBottom: '30px', gap: '20px' }}>
         {stats.map((stat, index) => (
           <StatCard key={index} {...stat} />
@@ -371,7 +396,14 @@ const CourierDashboard = () => {
 
       <div className="grid grid-2" style={{ marginBottom: '30px', gap: '25px' }}>
         {/* CHART FOR ANALYTICS */}
-        <ChartPlaceholder title="Weekly Earnings Tracker" type="bar" />
+        <ChartPlaceholder 
+          title="Monthly Earnings Tracker" 
+          type="bar" 
+          values={monthlyEarnings}
+          subtitle={`Total Earned in ${currentYear}: ${monthlyEarnings.reduce((a, b) => a + b, 0).toFixed(2)} MAD (All-time: ${courierEarnings.total.toFixed(2)} MAD)`}
+          legendLabel="Earnings (MAD)"
+          color="#10b981"
+        />
 
         {/* AVAILABLE REQUESTS CARD */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -390,7 +422,9 @@ const CourierDashboard = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
-            {availableDeliveries.length === 0 ? (
+            {availableLoading ? (
+              <LoadingSpinner centered label="Loading nearby deliveries..." minHeight="160px" />
+            ) : availableDeliveries.length === 0 ? (
               <div style={{
                 textAlign: 'center',
                 padding: '40px 20px',
@@ -442,9 +476,12 @@ const CourierDashboard = () => {
                       <button 
                         className="btn btn-primary" 
                         onClick={() => handleAcceptNearby(delivery.id)}
-                        style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '8px', cursor: 'pointer' }}
+                        disabled={acceptingDeliveryId === delivery.id}
+                        style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '8px', cursor: acceptingDeliveryId === delivery.id ? 'not-allowed' : 'pointer' }}
                       >
-                        Accept
+                        {acceptingDeliveryId === delivery.id ? (
+                          <LoadingSpinner inline label="Accepting..." size={12} />
+                        ) : 'Accept'}
                       </button>
                     </div>
                   </div>
@@ -564,6 +601,7 @@ const CourierDashboard = () => {
           </table>
         </div>
       </div>
+      </SectionLoading>
 
       {/* WITHDRAW EARNINGS MODAL */}
       {showWithdrawModal && (
