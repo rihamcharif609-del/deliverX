@@ -377,8 +377,8 @@ const CreateDelivery = () => {
                 value={formData.priority}
                 onChange={handleChange}
               >
-                <option value="standard">Standard (2-3 hours)</option>
-                <option value="express">Express (1 hour)</option>
+                <option value="standard">Standard </option>
+                <option value="express">Express </option>
                 <option value="scheduled">Scheduled</option>
               </select>
             </div>

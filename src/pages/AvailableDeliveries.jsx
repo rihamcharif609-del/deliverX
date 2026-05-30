@@ -84,18 +84,6 @@ const AvailableDeliveries = () => {
               <span className="stat-label" style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Available</span>
               <span className="stat-value" style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)' }}>{mappedDeliveries.length}</span>
             </div>
-            <div className="stat-badge" style={{
-              background: 'var(--card-background)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '12px',
-              padding: '8px 16px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center'
-            }}>
-              <span className="stat-label" style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Active City</span>
-              <span className="stat-value" style={{ fontSize: '18px', fontWeight: '700', color: '#10b981' }}>Casablanca</span>
-            </div>
           </div>
         </div>
 

@@ -160,11 +160,7 @@ const Header = ({userRole = 'sender', darkMode, setDarkMode }) => {
 
   return (
     <header className="header">
-      <div className="header-search">
-        <span>🔍</span>
-        <input type="text" placeholder={t('searchPlaceholder')} />
-      </div>
-
+      <div />
       <div className="header-actions">
         {/* Notifications */}
         <div className="notification-wrapper">

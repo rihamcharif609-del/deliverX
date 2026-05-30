@@ -4,6 +4,7 @@ import MainLayout from '../layouts/MainLayout';
 import { useNavigate } from 'react-router-dom';
 import { useCourierVerification } from '../context/CourierVerificationContext';
 import { useDelivery } from '../context/DeliveryContext';
+import { useAuth } from '../context/AuthContext';
 
 const DOC_CONFIG = [
   { key: 'cinImage', label: 'CIN Card Image' },
@@ -14,7 +15,16 @@ const DOC_CONFIG = [
 const CourierProfile = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { addNotification, couriers, deliveries } = useDelivery();
+  const { user } = useAuth();
+  const { 
+    addNotification, 
+    deliveries, 
+    courierRatingSummary, 
+    fetchCourierRatings, 
+    fetchDeliveries,
+    fetchCourierWallet,
+    courierEarnings
+  } = useDelivery();
   const {
     profile,
     documents,
@@ -29,9 +39,18 @@ const CourierProfile = () => {
     submitForVerification,
   } = useCourierVerification();
 
-  const myCourierInfo = (couriers || []).find(c => c.name === profile.name) || (couriers || []).find(c => c.name === 'Mike Smith') || { rating: 4.8, completedCount: 0 };
-  const currentRating = myCourierInfo.rating;
-  const completedCount = myCourierInfo.completedCount || (deliveries || []).filter(d => (d.courier === profile.name || d.courier === 'Mike Smith') && d.status === 'delivered').length;
+  React.useEffect(() => {
+    fetchDeliveries('courier').catch(() => {});
+    fetchCourierRatings().catch(() => {});
+    fetchCourierWallet().catch(() => {});
+  }, [fetchDeliveries, fetchCourierRatings, fetchCourierWallet]);
+
+  const completedDeliveries = (deliveries || []).filter(
+    d => d.status === 'delivered' && (d.courierId === user?.id || d.courier === user?.name || d.courier === 'Mike Smith')
+  );
+  const totalEarnings = completedDeliveries.reduce((sum, d) => sum + (d.amount - d.commission), 0) || courierEarnings.total || 0;
+  const currentRating = courierRatingSummary.averageRating || 0;
+  const completedCount = completedDeliveries.length;
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ ...profile });
@@ -226,11 +245,11 @@ const CourierProfile = () => {
 
         <div className="profile-stats-grid">
           <div className="profile-stat-card">
-            <div className="profile-stat-value">{profile.earnings?.toFixed(2) || '0.00'} MAD</div>
+            <div className="profile-stat-value">{totalEarnings.toFixed(2)} MAD</div>
             <div className="profile-stat-label">Total Earnings</div>
           </div>
           <div className="profile-stat-card">
-            <div className="profile-stat-value">{currentRating.toFixed(1)} ⭐</div>
+            <div className="profile-stat-value">{currentRating > 0 ? currentRating.toFixed(1) : '0.0'} ⭐</div>
             <div className="profile-stat-label">Rating</div>
           </div>
           <div className="profile-stat-card">

@@ -15,9 +15,16 @@ const SenderDeliveryTable = ({
   const filteredData = deliveries.filter((d) => {
     // Map custom filters to status keys
     let mappedFilter = selectedFilter.toLowerCase();
+
+    const matchesSearch = !searchQuery ||
+                          d.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          d.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          d.to.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+
     if (mappedFilter === 'pending') {
       // Waiting for courier or accepted but unpaid are both pending payments or pickups
-      return d.status === 'waiting-courier' || d.status === 'accepted';
+      return d.status === 'waiting-courier' || d.status === 'accepted' || d.status === 'paid';
     }
     if (mappedFilter === 'in transit') {
       return d.status === 'picked-up' || d.status === 'in-transit';
@@ -29,17 +36,12 @@ const SenderDeliveryTable = ({
       return d.status === 'cancelled';
     }
     
-    const matchesFilter = selectedFilter === 'All' || d.status.toLowerCase() === selectedFilter.toLowerCase().replace(' ', '-');
-    const matchesSearch = d.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          d.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          d.to.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesFilter && matchesSearch;
+    return true; // All
   });
 
   const visibleData = typeof limit === 'number' ? filteredData.slice(0, limit) : filteredData;
   const columnCount = showActions ? 8 : 7;
   const navigate = useNavigate();
-
   return (
     <div className="table-container" style={{
       background: 'var(--card-background)',

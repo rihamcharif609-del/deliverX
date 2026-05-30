@@ -21,7 +21,10 @@ const SenderDashboard = ({ navigateTo }) => {
   const activeDeliveries = deliveries.filter((delivery) =>
     ['accepted', 'paid', 'picked-up', 'in-transit', 'waiting-courier'].includes(delivery.status)
   );
-  const totalSpent = deliveries.reduce((sum, delivery) => sum + (Number(delivery.amount) || 0), 0);
+  const paidStatuses = new Set(['held', 'released', 'paid']);
+  const totalSpent = deliveries.reduce((sum, delivery) => (
+    paidStatuses.has(delivery.paymentStatus) ? sum + Number(delivery.amount || 0) : sum
+  ), 0);
 
   const stats = [
     { title: 'Total Orders', value: String(deliveries.length), change: 'Your account', icon: 'DX', trend: 'positive' },

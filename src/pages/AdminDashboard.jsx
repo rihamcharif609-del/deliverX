@@ -38,9 +38,17 @@ const AdminDashboard = ({ setUserRole }) => {
     decideWithdrawal
   } = useDelivery();
 
+  const [recentUsers, setRecentUsers] = useState([]);
+
   useEffect(() => {
     fetchDeliveries('admin').catch(() => {});
-    fetchAdminDashboard().catch(() => {});
+    fetchAdminDashboard()
+      .then((res) => {
+        if (res && res.recent_users) {
+          setRecentUsers(res.recent_users);
+        }
+      })
+      .catch(() => {});
     fetchAdminWithdrawals().catch(() => {});
   }, [fetchDeliveries, fetchAdminDashboard, fetchAdminWithdrawals]);
 
@@ -110,18 +118,12 @@ const AdminDashboard = ({ setUserRole }) => {
     }, 1500);
   };
 
-  // Mock static users list
-  const recentUsers = [
-    { id: 5, name: 'David Wilson', email: 'david.w@example.com', role: 'courier', status: 'active', joined: '2026-02-15', deliveries: 67 },
-    { id: 6, name: 'Lisa Anderson', email: 'lisa.a@example.com', role: 'sender', status: 'inactive', joined: '2026-03-01', deliveries: 3 },
-    { id: 7, name: 'James Taylor', email: 'james.t@example.com', role: 'courier', status: 'active', joined: '2026-01-05', deliveries: 92 },
-    { id: 8, name: 'Maria Garcia', email: 'maria.g@example.com', role: 'sender', status: 'inactive', joined: '2026-04-12', deliveries: 8 },
-  ];
+
 
   const topCouriers = adminRatingSummary.topRatedCouriers.slice(0, 3);
   const worstCouriers = adminRatingSummary.worstRatedCouriers.slice(0, 3);
   const latestReviews = adminRatingSummary.latestReviews.slice(0, 5);
-  const latestWithdrawals = adminWithdrawals.slice(0, 5);
+  const _latestWithdrawals = adminWithdrawals.slice(0, 5);
 
   const getRecentComment = (courierName) => {
     const courierReview = latestReviews.find(
@@ -133,13 +135,36 @@ const AdminDashboard = ({ setUserRole }) => {
     return null;
   };
 
-  const handleWithdrawalDecision = async (withdrawalId, status) => {
+  const _handleWithdrawalDecision = async (withdrawalId, status) => {
     try {
       await decideWithdrawal(withdrawalId, status);
     } catch (err) {
       alert(err.response?.data?.message || 'Could not process withdrawal.');
     }
   };
+
+  // Calculate dynamic funds allocation for Escrow Chart
+  const releasedVal = (adminAnalytics?.releasedPayments || 0) * 0.85;
+  const commissionVal = adminAnalytics?.platformProfit || 0;
+  const pendingVal = (adminAnalytics?.pendingPayments || 0) * 0.85;
+  const totalActive = releasedVal + commissionVal + pendingVal;
+
+  let pctReleased = 0;
+  let pctCommission = 0;
+  let pctPending = 0;
+  let conicGradientBg = 'conic-gradient(var(--border-color) 0% 100%)';
+
+  if (totalActive > 0) {
+    pctReleased = (releasedVal / totalActive) * 100;
+    pctCommission = (commissionVal / totalActive) * 100;
+    pctPending = (pendingVal / totalActive) * 100;
+
+    conicGradientBg = `conic-gradient(
+      #10b981 0% ${pctReleased}%, 
+      #facc15 ${pctReleased}% ${pctReleased + pctCommission}%, 
+      #ef4444 ${pctReleased + pctCommission}% 100%
+    )`;
+  }
 
   return (
     <MainLayout userRole="admin" activePage="/admin" setUserRole={setUserRole}>
@@ -182,21 +207,62 @@ const AdminDashboard = ({ setUserRole }) => {
 
       {/* CHARTS */}
       <div className="grid grid-2" style={{ marginBottom: '30px', gap: '25px' }}>
-        <ChartPlaceholder title="Monthly Revenue Growth (MAD)" type="bar" />
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h3 style={{ marginBottom: '20px', fontSize: '16px', fontWeight: '600' }}>Morocco Escrow Funds Allocation</h3>
+        <ChartPlaceholder 
+          title="Monthly Revenue Growth (MAD)" 
+          type="bar" 
+          values={adminAnalytics?.monthlyRevenue} 
+        />
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '24px' }}>
+          <h3 style={{ marginBottom: '20px', fontSize: '16px', fontWeight: '600', width: '100%', textAlign: 'left' }}>Morocco Escrow Funds Allocation</h3>
           <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
             <div style={{ 
               width: '180px', 
               height: '180px', 
               borderRadius: '50%',
-              background: `conic-gradient(#10b981 0% 50%, #facc15 50% 85%, #ef4444 85% 100%)`
-            }}></div>
+              background: conicGradientBg,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: 'inset 0 0 20px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.05)'
+            }}>
+              {/* Inner donut hole */}
+              <div style={{
+                width: '120px',
+                height: '120px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--card-background)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
+              }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '600' }}>Active Funds</span>
+                <span style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', marginTop: '2px' }}>
+                  {totalActive.toFixed(2)} MAD
+                </span>
+              </div>
+            </div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '20px', flexWrap: 'wrap' }}>
-            <div className="legend-item"><div className="legend-color" style={{background: '#10b981', width: '10px', height: '10px', borderRadius: '2px'}}></div><span style={{fontSize: '11px'}}>Released to Courier (85%)</span></div>
-            <div className="legend-item"><div className="legend-color" style={{background: '#facc15', width: '10px', height: '10px', borderRadius: '2px'}}></div><span style={{fontSize: '11px'}}>Admin Commission (15%)</span></div>
-            <div className="legend-item"><div className="legend-color" style={{background: '#ef4444', width: '10px', height: '10px', borderRadius: '2px'}}></div><span style={{fontSize: '11px'}}>Disputed / Pending</span></div>
+            <div className="legend-item" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div className="legend-color" style={{background: '#10b981', width: '10px', height: '10px', borderRadius: '2px'}}></div>
+              <span style={{fontSize: '11px', color: 'var(--text-secondary)'}}>
+                Released to Courier: <strong style={{color: 'var(--text-primary)'}}>{releasedVal.toFixed(2)} MAD</strong> ({pctReleased.toFixed(1)}%)
+              </span>
+            </div>
+            <div className="legend-item" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div className="legend-color" style={{background: '#facc15', width: '10px', height: '10px', borderRadius: '2px'}}></div>
+              <span style={{fontSize: '11px', color: 'var(--text-secondary)'}}>
+                Admin Commission (15%): <strong style={{color: 'var(--text-primary)'}}>{commissionVal.toFixed(2)} MAD</strong> ({pctCommission.toFixed(1)}%)
+              </span>
+            </div>
+            <div className="legend-item" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div className="legend-color" style={{background: '#ef4444', width: '10px', height: '10px', borderRadius: '2px'}}></div>
+              <span style={{fontSize: '11px', color: 'var(--text-secondary)'}}>
+                Disputed / Pending: <strong style={{color: 'var(--text-primary)'}}>{pendingVal.toFixed(2)} MAD</strong> ({pctPending.toFixed(1)}%)
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -381,89 +447,14 @@ const AdminDashboard = ({ setUserRole }) => {
         </div>
       </div>
 
-      {/* COURIER WITHDRAWALS */}
-      <div className="card" style={{ padding: '24px', borderRadius: '16px', marginBottom: '30px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
-          <div>
-            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Courier Withdrawal Requests</h3>
-            <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>Approve or reject Moroccan bank payout requests.</p>
-          </div>
-        </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Courier</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Bank</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>RIB</th>
-                <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>Amount</th>
-                <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>Status</th>
-                <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {latestWithdrawals.length > 0 ? latestWithdrawals.map((withdrawal) => (
-                <tr key={withdrawal.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  <td style={{ padding: '14px 12px', fontWeight: '600', color: 'var(--text-primary)' }}>{withdrawal.courierName}</td>
-                  <td style={{ padding: '14px 12px' }}>{withdrawal.bankName}</td>
-                  <td style={{ padding: '14px 12px', fontFamily: 'monospace' }}>***{withdrawal.rib.slice(-6)}</td>
-                  <td style={{ padding: '14px 12px', textAlign: 'right', fontWeight: '700', color: '#10b981' }}>{withdrawal.amount.toFixed(2)} MAD</td>
-                  <td style={{ padding: '14px 12px', textAlign: 'center' }}>
-                    <span style={{
-                      padding: '4px 10px',
-                      borderRadius: '20px',
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      backgroundColor: withdrawal.status === 'approved' ? 'rgba(16, 185, 129, 0.12)' : withdrawal.status === 'rejected' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(234, 179, 8, 0.12)',
-                      color: withdrawal.status === 'approved' ? '#10b981' : withdrawal.status === 'rejected' ? '#ef4444' : '#eab308'
-                    }}>
-                      {withdrawal.status.toUpperCase()}
-                    </span>
-                  </td>
-                  <td style={{ padding: '14px 12px', textAlign: 'center' }}>
-                    {withdrawal.status === 'pending' ? (
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                        <button
-                          className="btn"
-                          onClick={() => handleWithdrawalDecision(withdrawal.id, 'approved')}
-                          style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: '#10b981', color: '#fff', fontSize: '11px', cursor: 'pointer' }}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          className="btn"
-                          onClick={() => handleWithdrawalDecision(withdrawal.id, 'rejected')}
-                          style={{ padding: '5px 10px', borderRadius: '6px', border: 'none', backgroundColor: '#ef4444', color: '#fff', fontSize: '11px', cursor: 'pointer' }}
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    ) : (
-                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Processed</span>
-                    )}
-                  </td>
-                </tr>
-              )) : (
-                <tr>
-                  <td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    No withdrawal requests found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       {/* OPERATIONS TABLES SECTION */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.1fr 1.2fr', gap: '25px', marginBottom: '30px' }}>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Active Deliveries Status</h3>
+            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Recent Deliveries Status</h3>
             <button className="btn btn-outline" onClick={() => navigate('/admin/deliveries')}>View All</button>
           </div>
-          <DeliveryTable showActions={false} deliveries={deliveries.slice(0, 4)} />
+          <DeliveryTable showActions={false} deliveries={deliveries.slice(0, 3)} />
         </div>
 
         <div>
@@ -471,7 +462,7 @@ const AdminDashboard = ({ setUserRole }) => {
             <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Recent Platform Users</h3>
             <button className="btn btn-outline" onClick={() => navigate('/admin/users')}>View All</button>
           </div>
-          <UserTable users={recentUsers} showActions={false}/>
+          <UserTable users={recentUsers.slice(0, 3)} showActions={false}/>
         </div>
 
         {/* TOP RATED COURIERS */}

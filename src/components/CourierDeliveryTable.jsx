@@ -24,10 +24,10 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
     if (!matchesSearch) return false;
 
     if (mappedFilter === 'pending') {
-      return d.status === 'accepted' || d.status === 'paid' || d.status === 'picked-up';
+      return d.status === 'accepted' || d.status === 'paid';
     }
     if (mappedFilter === 'in transit') {
-      return d.status === 'in-transit';
+      return d.status === 'picked-up' || d.status === 'in-transit';
     }
     if (mappedFilter === 'delivered') {
       return d.status === 'delivered';

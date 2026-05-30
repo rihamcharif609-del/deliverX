@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
-const Sidebar = ({ userRole = 'sender', activePage, onNavigate, onProfileClick }) => {
+const Sidebar = ({ userRole = 'sender' }) => {
   const menuItems = {
     admin: [
       { label: 'Dashboard', page: '/admin' },
@@ -24,14 +25,29 @@ const Sidebar = ({ userRole = 'sender', activePage, onNavigate, onProfileClick }
   };
 
   const location = useLocation();
-
-  const items = menuItems[userRole] || menuItems.sender;
-
-  const role = userRole || "sender";
-
   const navigate = useNavigate();
-
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const displayRole = user?.role || userRole || 'sender';
+  const displayName = user?.name || 'User';
+  const roleLabel = displayRole.charAt(0).toUpperCase() + displayRole.slice(1);
+  const items = menuItems[displayRole] || menuItems.sender;
+
+  const navigateToProfile = () => {
+    if (displayRole === 'admin') navigate('/admin/profile');
+    else if (displayRole === 'sender') navigate('/sender/profile');
+    else if (displayRole === 'courier') navigate('/courier/profile');
+  };
+
+  const navigateToItem = (item) => {
+    if (item.page === '/sender/tracking') {
+      const deliveries = JSON.parse(localStorage.getItem('myDeliveries')) || [];
+      navigate(deliveries.length === 1 ? `/sender/tracking/${deliveries[0].id}` : '/sender/tracking');
+      return;
+    }
+
+    navigate(item.page);
+  };
 
   return (
     <div className="sidebar">
@@ -39,29 +55,14 @@ const Sidebar = ({ userRole = 'sender', activePage, onNavigate, onProfileClick }
         <h2>DeliverX</h2>
         <p>{t('deliveryManagement')}</p>
       </div>
-      
+
       <nav className="sidebar-nav">
         <ul>
           {items.map((item) => (
             <li
               key={item.page}
               className={location.pathname === item.page ? 'active' : ''}
-              onClick={() => {
-  if (item.page === '/sender/tracking') {
-    
-    const deliveries = JSON.parse(localStorage.getItem('myDeliveries')) || [];
-
-    if (deliveries.length === 1) {
-      navigate(`/sender/tracking/${deliveries[0].id}`);
-    } else {
-      navigate('/sender/tracking');
-    }
-  
-  } else {
-    navigate(item.page);
-  }
-}}
-
+              onClick={() => navigateToItem(item)}
             >
               {item.label === 'Dashboard' ? t('dashboard') :
                item.label === 'All Deliveries' ? t('allDeliveries') :
@@ -76,31 +77,13 @@ const Sidebar = ({ userRole = 'sender', activePage, onNavigate, onProfileClick }
         </ul>
       </nav>
 
-      <div className="sidebar-footer">
-
-  <div className="sidebar-footer" onClick={() => {
-    // Hna kanshoufou chnu l-role dyal l-user bach n-tsiftوه l-blasa s-s7i7a
-    if (userRole === 'admin') {
-      navigate('/admin/profile');
-    } else if (userRole === 'sender') {
-      navigate('/sender/profile');
-    } else if (userRole === 'courier') {
-      navigate('/courier/profile');
-    }
-  }} style={{ cursor: 'pointer' }}>
+      <div className="sidebar-footer" onClick={navigateToProfile} style={{ cursor: 'pointer' }}>
         <div className="user-info">
-          <div className="user-avatar">
-            {userRole === 'admin' ? 'A' : userRole === 'sender' ? 'S' : 'C'}
-          </div>
           <div className="user-details">
-            <h4>
-              {userRole === 'admin' ? 'John Admin' : 
-               userRole === 'sender' ? 'John Sender' : 'Mike Courier'}
-            </h4>
-            <p>{userRole.charAt(0).toUpperCase() + userRole.slice(1)}</p>
+            <h4>{displayName}</h4>
+            <p>{roleLabel}</p>
           </div>
         </div>
-      </div>
       </div>
     </div>
   );
