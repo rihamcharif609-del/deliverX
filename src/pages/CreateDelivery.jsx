@@ -164,7 +164,7 @@ const CreateDelivery = () => {
           </div>
         )}
 
-        <div className="grid grid-2" style={{ gap: '30px' }}>
+        <div className="grid grid-5" style={{ gap: '30px' }}>
           <div className="card">
             <h3 style={{ marginBottom: '20px' }}>{t('pickupLocation')}</h3>
 

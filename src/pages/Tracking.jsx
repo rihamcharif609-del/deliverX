@@ -227,7 +227,7 @@ const Tracking = () => {
 
       {/* TOP GRID */}
       <div
-        className="grid grid-2"
+        className="grid grid-5"
         style={{
           gap: '20px',
           alignItems: 'start',

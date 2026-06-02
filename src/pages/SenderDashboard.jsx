@@ -62,7 +62,7 @@ const SenderDashboard = ({ navigateTo }) => {
         ))}
       </div>
 
-      <div className="grid grid-2" style={{ marginBottom: '30px' }}>
+      <div className="grid grid-5" style={{ marginBottom: '30px' }}>
         <ChartPlaceholder 
           title="Monthly Spend History" 
           type="bar" 

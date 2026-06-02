@@ -166,9 +166,9 @@ const AdminDashboard = ({ setUserRole }) => {
     pctPending = (pendingVal / totalActive) * 100;
 
     conicGradientBg = `conic-gradient(
-      #10b981 0% ${pctReleased}%, 
-      #facc15 ${pctReleased}% ${pctReleased + pctCommission}%, 
-      #ef4444 ${pctReleased + pctCommission}% 100%
+      #0c356b 0% ${pctReleased}%, 
+      #2b154a ${pctReleased}% ${pctReleased + pctCommission}%, 
+      #2187b9 ${pctReleased + pctCommission}% 100%
     )`;
   }
 
@@ -201,12 +201,12 @@ const AdminDashboard = ({ setUserRole }) => {
       <div style={{ marginBottom: '20px' }}>
         <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '15px' }}>Morocco Gateway Financial Overview</h3>
       </div>
-      <div className="grid grid-3" style={{ marginBottom: '20px', gap: '20px' }}>
+      <div className="grid grid-3" style={{ marginBottom: '10px', gap: '10px' }}>
         {stats.slice(0, 3).map((stat, index) => (
           <StatCard key={index} {...stat} />
         ))}
       </div>
-      <div className="grid grid-3" style={{ marginBottom: '30px', gap: '20px' }}>
+      <div className="grid grid-3" style={{ marginBottom: '20px', gap: '10px' }}>
         {stats.slice(3, 6).map((stat, index) => (
           <StatCard key={index} {...stat} />
         ))}
@@ -272,208 +272,9 @@ const AdminDashboard = ({ setUserRole }) => {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* CORE PAYMENT AND ESCROW MONITOR TABLE */}
-      <div className="card" style={{ padding: '24px', borderRadius: '16px', marginBottom: '30px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
-          <div>
-            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Moroccan Gateway Payment Monitor</h3>
-            <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>Track customer credit card payments, platform commissions, escrow status, and execute refunds.</p>
-          </div>
-
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            {/* Search Input */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              background: 'var(--hover-bg)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px',
-              padding: '6px 12px',
-              width: '200px'
-            }}>
-              <FaSearch size={12} color="gray" />
-              <input 
-                type="text" 
-                placeholder="Search payments..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  marginLeft: '6px',
-                  outline: 'none',
-                  fontSize: '12px',
-                  color: 'var(--text-primary)',
-                  width: '100%'
-                }}
-              />
-            </div>
-
-            {/* Filter Dropdown */}
-            <select 
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                border: '1px solid var(--border-color)',
-                background: 'var(--card-background)',
-                color: 'var(--text-primary)',
-                outline: 'none',
-                fontSize: '12px',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="all">All Escrow Statuses</option>
-              <option value="pending">Awaiting Payment</option>
-              <option value="held">Held in Escrow</option>
-              <option value="released">Released to Courier</option>
-              <option value="refunded">Refunded</option>
-            </select>
-          </div>
-        </div>
-
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Order ID</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Sender / Courier</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Route</th>
-                <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>Total Paid</th>
-                <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>Commission (15%)</th>
-                <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>Courier Share (85%)</th>
-                <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>Escrow Status</th>
-                <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>Dispute / Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paymentDeliveries.length > 0 ? (
-                paymentDeliveries.map((d) => {
-                  const amountVal = typeof d.amount === 'number' ? d.amount : parseFloat(d.amount) || 0;
-                  const commission = typeof d.commission === 'number' ? d.commission : (amountVal * 0.15);
-                  const courierShare = amountVal - commission;
-                  return (
-                    <tr key={d.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                      {/* Order ID */}
-                      <td style={{ padding: '14px 12px', fontWeight: '700', color: 'var(--text-primary)' }}>{d.id}</td>
-                      
-                      {/* Sender & Courier */}
-                      <td style={{ padding: '14px 12px' }}>
-                        <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-primary)' }}>{d.customer || 'John Sender'}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Courier: {d.courier || 'Unassigned'}</div>
-                      </td>
-
-                      {/* Route */}
-                      <td style={{ padding: '14px 12px', fontSize: '11px' }}>
-                        <div>{d.pickup ? d.pickup.split(',')[0] : (d.from ? d.from.split(',')[0] : 'N/A')}</div>
-                        <div style={{ color: 'gray' }}>→ {d.destination ? d.destination.split(',')[0] : (d.to ? d.to.split(',')[0] : 'N/A')}</div>
-                      </td>
-
-                      {/* Total Paid */}
-                      <td style={{ padding: '14px 12px', textAlign: 'right', fontWeight: '600', color: 'var(--text-primary)' }}>
-                        {amountVal.toFixed(2)} MAD
-                      </td>
-
-                      {/* Commission */}
-                      <td style={{ padding: '14px 12px', textAlign: 'right', fontWeight: '600', color: '#aa3bff' }}>
-                        {commission.toFixed(2)} MAD
-                      </td>
-
-                      {/* Courier Share */}
-                      <td style={{ padding: '14px 12px', textAlign: 'right', fontWeight: '600', color: '#10b981' }}>
-                        {courierShare.toFixed(2)} MAD
-                      </td>
-
-                      {/* Escrow Status Badge */}
-                      <td style={{ padding: '14px 12px', textAlign: 'center' }}>
-                        <span style={{
-                          padding: '4px 10px',
-                          borderRadius: '20px',
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          backgroundColor: 
-                            d.paymentStatus === 'released' ? 'rgba(16, 185, 129, 0.12)' :
-                            d.paymentStatus === 'held' ? 'rgba(234, 179, 8, 0.12)' :
-                            d.paymentStatus === 'refunded' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                          color: 
-                            d.paymentStatus === 'released' ? '#10b981' :
-                            d.paymentStatus === 'held' ? '#eab308' :
-                            d.paymentStatus === 'refunded' ? '#3b82f6' : '#ef4444'
-                        }}>
-                          {d.paymentStatus === 'held' ? 'Held in Escrow' : 
-                           d.paymentStatus === 'released' ? 'Released' : 
-                           d.paymentStatus === 'refunded' ? 'Refunded' : 'Awaiting Payment'}
-                        </span>
-                      </td>
-
-                      {/* Action */}
-                      <td style={{ padding: '14px 12px', textAlign: 'center' }}>
-                        {d.paymentStatus === 'held' ? (
-                          <button
-                            onClick={() => handleOpenRefundModal(d)}
-                            style={{
-                              padding: '5px 10px',
-                              borderRadius: '6px',
-                              border: '1px solid rgba(239, 68, 68, 0.3)',
-                              backgroundColor: 'rgba(239, 68, 68, 0.05)',
-                              color: '#ef4444',
-                              fontSize: '11px',
-                              fontWeight: '600',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              transition: 'all 0.2s'
-                            }}
-                          >
-                            <FaUndoAlt size={10} /> Issue Refund
-                          </button>
-                        ) : d.paymentStatus === 'released' ? (
-                          <span style={{ fontSize: '11px', color: 'gray' }}>Settled</span>
-                        ) : d.paymentStatus === 'refunded' ? (
-                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Refunded</span>
-                        ) : (
-                          <span style={{ fontSize: '11px', color: 'gray' }}>Awaiting Card</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="8" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    No payment records found matching the filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* OPERATIONS TABLES SECTION */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.1fr 1.2fr', gap: '25px', marginBottom: '30px' }}>
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Recent Deliveries Status</h3>
-            <button className="btn btn-outline" onClick={() => navigate('/admin/deliveries')}>View All</button>
-          </div>
-          <DeliveryTable showActions={false} deliveries={deliveries.slice(0, 3)} />
-        </div>
+          {/* TOP RATED COURIERS */}
 
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Recent Platform Users</h3>
-            <button className="btn btn-outline" onClick={() => navigate('/admin/users')}>View All</button>
-          </div>
-          <UserTable users={recentUsers.slice(0, 3)} showActions={false}/>
-        </div>
-
-        {/* TOP RATED COURIERS */}
-        <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Top Rated Couriers</h3>
           </div>
@@ -564,8 +365,211 @@ const AdminDashboard = ({ setUserRole }) => {
         </div>
       </div>
 
+      {/* CORE PAYMENT AND ESCROW MONITOR TABLE */}
+      <div className="card" style={{ padding: '24px', borderRadius: '16px', marginBottom: '30px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Moroccan Gateway Payment Monitor</h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>Track customer credit card payments, platform commissions, escrow status, and execute refunds.</p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            {/* Search Input */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'var(--hover-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px',
+              padding: '6px 12px',
+              width: '200px'
+            }}>
+              <FaSearch size={12} color="gray" />
+              <input 
+                type="text" 
+                placeholder="Search payments..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  marginLeft: '6px',
+                  outline: 'none',
+                  fontSize: '12px',
+                  color: 'var(--text-primary)',
+                  width: '100%'
+                }}
+              />
+            </div>
+
+            {/* Filter Dropdown */}
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)',
+                background: 'var(--card-background)',
+                color: 'var(--text-primary)',
+                outline: 'none',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="all">All Escrow Statuses</option>
+              <option value="pending">Awaiting Payment</option>
+              <option value="held">Held in Escrow</option>
+              <option value="released">Released to Courier</option>
+              <option value="refunded">Refunded</option>
+            </select>
+          </div>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
+                <th style={{ width: '14%', padding: '8px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Order ID</th>
+                <th style={{ width: '16%', padding: '8px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Sender / Courier</th>
+                <th style={{ width: '14%', padding: '8px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Route</th>
+                <th style={{ width: '11%', padding: '8px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>Total Paid</th>
+                <th style={{ width: '12%', padding: '8px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>Commission (15%)</th>
+                <th style={{ width: '12%', padding: '8px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>Courier Share (85%)</th>
+                <th style={{ width: '11%', padding: '8px', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>Escrow Status</th>
+                <th style={{ width: '10%', padding: '8px', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>Dispute / Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paymentDeliveries.length > 0 ? (
+                paymentDeliveries.map((d) => {
+                  const amountVal = typeof d.amount === 'number' ? d.amount : parseFloat(d.amount) || 0;
+                  const commission = typeof d.commission === 'number' ? d.commission : (amountVal * 0.15);
+                  const courierShare = amountVal - commission;
+                  return (
+                    <tr key={d.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      {/* Order ID */}
+                      <td style={{ padding: '12px 8px', fontWeight: '700', color: 'var(--text-primary)' }}>{d.id}</td>
+                      
+                      {/* Sender & Courier */}
+                      <td style={{ padding: '12px 8px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-primary)' }}>{d.customer || 'John Sender'}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Courier: {d.courier || 'Unassigned'}</div>
+                      </td>
+
+                      {/* Route */}
+                      <td style={{ padding: '12px 8px', fontSize: '11px' }}>
+                        <div>{d.pickup ? d.pickup.split(',')[0] : (d.from ? d.from.split(',')[0] : 'N/A')}</div>
+                        <div style={{ color: 'gray' }}>→ {d.destination ? d.destination.split(',')[0] : (d.to ? d.to.split(',')[0] : 'N/A')}</div>
+                      </td> 
+
+                      {/* Total Paid */}
+                      <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '600', color: 'var(--text-primary)' }}>
+                        {amountVal.toFixed(2)} MAD
+                      </td>
+
+                      {/* Commission */}
+                      <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '600', color: '#aa3bff' }}>
+                        {commission.toFixed(2)} MAD
+                      </td>
+
+                      {/* Courier Share */}
+                      <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '600', color: '#10b981' }}>
+                        {courierShare.toFixed(2)} MAD
+                      </td>
+
+                      {/* Escrow Status Badge */}
+                      <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                        <span style={{
+                          padding: '3px 6px',
+                          whiteSpace: 'nowrap',
+                          borderRadius: '20px',
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          backgroundColor: 
+                            d.paymentStatus === 'released' ? 'rgba(16, 185, 129, 0.12)' :
+                            d.paymentStatus === 'held' ? 'rgba(234, 179, 8, 0.12)' :
+                            d.paymentStatus === 'refunded' ? 'rgba(59, 130, 246, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                          color: 
+                            d.paymentStatus === 'released' ? '#10b981' :
+                            d.paymentStatus === 'held' ? '#eab308' :
+                            d.paymentStatus === 'refunded' ? '#3b82f6' : '#ef4444'
+                        }}>
+                          {d.paymentStatus === 'held' ? 'Held in Escrow' : 
+                           d.paymentStatus === 'released' ? 'Released' : 
+                           d.paymentStatus === 'refunded' ? 'Refunded' : 'Awaiting Payment'}
+                        </span>
+                      </td>
+
+                      {/* Action */}
+                      <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                        {d.paymentStatus === 'held' ? (
+                          <button
+                            onClick={() => handleOpenRefundModal(d)}
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                              color: '#ef4444',
+                              fontSize: '11px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            <FaUndoAlt size={10} /> Issue Refund
+                          </button>
+                        ) : d.paymentStatus === 'released' ? (
+                          <span style={{ fontSize: '11px', color: 'gray' }}>Settled</span>
+                        ) : d.paymentStatus === 'refunded' ? (
+                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Refunded</span>
+                        ) : (
+                          <span style={{ fontSize: '11px', color: 'gray' }}>Awaiting Card</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="8" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                    No payment records found matching the filters.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* OPERATIONS TABLES SECTION */}
+      <div style={{ display: 'grid', gap: '25px', marginBottom: '30px' }}>
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Recent Deliveries Status</h3>
+            <button className="btn btn-outline" onClick={() => navigate('/admin/deliveries')}>View All</button>
+          </div>
+          <DeliveryTable showActions={false} deliveries={deliveries.slice(0, 3)} />
+        </div>
+
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Recent Platform Users</h3>
+            <button className="btn btn-outline" onClick={() => navigate('/admin/users')}>View All</button>
+          </div>
+          <UserTable users={recentUsers.slice(0, 3)} showActions={false}/>
+        </div>
+
+        
+      
+      </div>
+
       {/* RATING MONITOR */}
-      <div className="grid grid-2" style={{ marginBottom: '30px', gap: '25px' }}>
+      <div className="grid grid-5" style={{ marginBottom: '30px', gap: '25px' }}>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Worst Rated Couriers</h3>

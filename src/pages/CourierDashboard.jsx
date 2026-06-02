@@ -394,7 +394,7 @@ const CourierDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-2" style={{ marginBottom: '30px', gap: '25px' }}>
+      <div className="grid grid-5" style={{ marginBottom: '30px', gap: '25px' }}>
         {/* CHART FOR ANALYTICS */}
         <ChartPlaceholder 
           title="Monthly Earnings Tracker" 

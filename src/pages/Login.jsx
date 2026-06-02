@@ -61,8 +61,9 @@ const Login = () => {
               marginBottom: '16px',
               padding: '12px',
               borderRadius: '8px',
-              background: 'rgba(239, 68, 68, 0.1)',
-              color: '#ef4444',
+              background: 'rgba(239, 68, 68, 0.14)',
+              color: '#fca5a5',
+              border: '1px solid rgba(239, 68, 68, 0.22)',
               fontSize: '14px',
             }}
           >
@@ -96,27 +97,37 @@ const Login = () => {
           />
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.78)' }}>
             <input type="checkbox" disabled={loading} /> Remember me
           </label>
-          <a href="#" style={{ color: 'var(--primary-color)', textDecoration: 'none' }}>Forgot password?</a>
+          <a href="#" style={{ color: '#93c5fd', textDecoration: 'none' }}>Forgot password?</a>
         </div>
 
         <button
           type="submit"
           className="btn btn-primary"
-          style={{ width: '100%', marginBottom: '20px' }}
+          style={{
+  width: '100%',
+  marginBottom: '20px',
+  background: '#2563eb',
+  color: '#ffffff',
+  border: 'none',
+  borderRadius: '14px',
+  padding: '15px 18px',
+  fontWeight: 700,
+  boxShadow: '0 12px 30px rgba(37,99,235,0.35)'
+}}
           disabled={loading}
         >
           {loading ? <LoadingSpinner inline label="Signing in..." size={16} /> : 'Sign In'}
         </button>
 
-        <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.72)' }}>
           Don't have an account?{' '}
           <a
             href="#"
-            style={{ color: 'var(--primary-color)', textDecoration: 'none' }}
+            style={{ color: '#93c5fd', textDecoration: 'none' }}
             onClick={(e) => { e.preventDefault(); navigate('/register'); }}
           >
             Sign up

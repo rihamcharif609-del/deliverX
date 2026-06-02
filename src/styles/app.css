@@ -6,7 +6,7 @@
 
 :root {
   --primary-color: #2563eb;
-  --primary-dark: #1d4ed8;
+  --primary-dark: #0f2359;
   --primary-light: #60a5fa;
   --secondary-color: #64748b;
   --success-color: #10b981;
@@ -97,6 +97,10 @@ body {
 }
 
 .grid-2 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-5 {
   grid-template-columns: repeat(2, 1fr);
 }
 
