@@ -112,6 +112,83 @@ const translations = {
     activeCouriers: 'Active Couriers',
     totalRevenue: 'Total Revenue',
     acceptJob: 'Accept Job',
+// Dashboard - Financial / Admin
+     courierVerification: 'Courier Verification',
+    moroccoGatewayFinancialOverview: 'Morocco Gateway Financial Overview',
+    platformProfit: 'Platform Profit',
+    courierEarnings: 'Courier Earnings',
+    heldInEscrow: 'Held in Escrow',
+    releasedPayouts: 'Released Payouts',
+    refundsIssued: 'Refunds Issued',
+    locked: 'Locked',
+    cleared: 'Cleared',
+    disputed: 'Disputed',
+    escrowSystemAutomatic: 'Escrow System: AUTOMATIC RELEASE (via OTP)',
+    monthlyRevenueGrowth: 'Monthly Revenue Growth (MAD)',
+    moroccoEscrowFundsAllocation: 'Morocco Escrow Funds Allocation',
+    topRatedCouriers: 'Top Rated Couriers',
+    adminWelcomeMessage: ', to the DeliverX Admin Financial & Operations Control Panel.',
+    januaryDecember: 'January - December 2026',
+    revenueMad: 'Revenue (MAD)',
+    welcome: 'Welcome,',
+
+    
+    // Payment Monitor
+    moroccanGatewayPaymentMonitor: 'Moroccan Gateway Payment Monitor',
+    paymentMonitorDesc: 'Track customer credit card payments, platform commissions, escrow status, and execute refunds.',
+    searchPayments: 'Search payments...',
+    allEscrowStatuses: 'All Escrow Statuses',
+    orderId: 'Order ID',
+    senderCourier: 'Sender / Courier',
+    route: 'Route',
+    totalPaid: 'Total Paid',
+    commission: 'Commission (15%)',
+    courierShare: 'Courier Share (85%)',
+    escrowStatus: 'Escrow Status',
+    disputeAction: 'Dispute / Action',
+    courierLabel: 'Courier',
+    unassigned: 'Unassigned',
+
+    // Escrow Status Values
+    released: 'Released',
+    awaitingPayment: 'Awaiting Payment',
+    heldInEscrow: 'Held in Escrow',
+
+    // Dispute/Action Values
+    settled: 'Settled',
+    awaitingCard: 'Awaiting Card',
+    issueRefund: 'Issue Refund',
+
+    // English
+recentDeliveriesStatus: 'Recent Deliveries Status',
+viewAll: 'View All',
+customer: 'Customer',
+courier: 'Courier',
+date: 'Date',
+status: 'Status',
+total: 'Total',
+delivered: 'Delivered',
+waitingCourier: 'Waiting Courier',
+unassigned: 'Unassigned',
+
+recentPlatformUsers: 'Recent Platform Users',
+user: 'User',
+email: 'Email',
+role: 'Role',
+joined: 'Joined',
+deliveries: 'Deliveries',
+active: 'Active',
+sender: 'Sender',
+courierRole: 'Courier',
+
+worstRatedCouriers: 'Worst Rated Couriers',
+reviews: 'Reviews',
+rating: 'Rating',
+
+latestReviews: 'Latest Reviews',
+senderCourier: 'Sender / Courier',
+comment: 'Comment',
+  
   },
   fr: {
     // Sidebar & Navigation
@@ -223,6 +300,88 @@ const translations = {
     activeCouriers: 'Coursiers actifs',
     totalRevenue: 'Revenu total',
     acceptJob: 'Accepter le travail',
+
+// Dashboard - Financial / Admin
+    courierVerification: 'Vérification des coursiers',
+    moroccoGatewayFinancialOverview: 'Vue d\'ensemble financière - Passerelle Maroc',
+    //platformProfit: 'Bénéfice de la plateforme',
+    //courierEarnings: 'Gains du coursier',
+    //heldInEscrow: 'En séquestre',
+    //releasedPayouts: 'Paiements libérés',
+    //refundsIssued: 'Remboursements émis',
+    //locked: 'Verrouillé',
+    //cleared: 'Validé',
+    //disputed: 'Contesté',
+    escrowSystemAutomatic: 'Système de séquestre : LIBÉRATION AUTOMATIQUE (via OTP)',
+    monthlyRevenueGrowth: 'Croissance mensuelle des revenus (MAD)',
+    moroccoEscrowFundsAllocation: 'Allocation des fonds séquestrés - Maroc',
+    topRatedCouriers: 'Meilleurs coursiers',
+    adminWelcomeMessage: ', sur le panneau de contrôle financier et opérationnel de DeliverX.',
+    januaryDecember: 'Janvier - Décembre 2026',
+    revenueMad: 'Revenus (MAD)',
+    welcome: 'Bienvenue,',
+
+    // Payment Monitor
+    moroccanGatewayPaymentMonitor: 'Moniteur de paiement - Passerelle Marocaine',
+    paymentMonitorDesc: 'Suivez les paiements par carte de crédit, les commissions de la plateforme, le statut de séquestre et effectuez des remboursements.',
+    searchPayments: 'Rechercher des paiements...',
+    allEscrowStatuses: 'Tous les statuts de séquestre',
+    orderId: 'ID de commande',
+    senderCourier: 'Expéditeur / Coursier',
+    route: 'Itinéraire',
+    totalPaid: 'Total payé',
+    commission: 'Commission (15%)',
+    courierShare: 'Part du coursier (85%)',
+    escrowStatus: 'Statut de séquestre',
+    disputeAction: 'Litige / Action',
+    courierLabel: 'Coursier',
+    unassigned: 'Non assigné',
+
+    // Escrow Status Values
+    released: 'Libéré',
+    awaitingPayment: 'En attente de paiement',
+    heldInEscrow: 'En séquestre',
+
+    // Dispute/Action Values
+    settled: 'Réglé',
+    awaitingCard: 'En attente de carte',
+    issueRefund: 'Émettre un remboursement',
+
+    // Recent Deliveries Status
+recentDeliveriesStatus: 'Statut des livraisons récentes',
+viewAll: 'Voir tout',
+orderId: 'ID de commande',
+customer: 'Client',
+courier: 'Coursier',
+date: 'Date',
+status: 'Statut',
+total: 'Total',
+delivered: 'Livré',
+waitingCourier: 'En attente du coursier',
+unassigned: 'Non assigné',
+
+// Recent Platform Users
+recentPlatformUsers: 'Utilisateurs récents de la plateforme',
+user: 'Utilisateur',
+email: 'E-mail',
+role: 'Rôle',
+joined: 'Inscrit le',
+deliveries: 'Livraisons',
+active: 'Actif',
+sender: 'Expéditeur',
+courierRole: 'Coursier',
+
+// Worst Rated Couriers
+worstRatedCouriers: 'Coursiers les moins bien notés',
+reviews: 'Avis',
+rating: 'Note',
+
+// Latest Reviews
+latestReviews: 'Derniers avis',
+senderCourier: 'Expéditeur / Coursier',
+comment: 'Commentaire',
+
+    
   },
   ar: {
     // Sidebar & Navigation
@@ -317,6 +476,24 @@ const translations = {
     activeCouriers: 'المناديب النشطين',
     totalRevenue: 'إجمالي الإيرادات',
     acceptJob: 'قبول المهمة',
+
+    courierVerification: 'التحقق من المناديب',
+    moroccoGatewayFinancialOverview: 'النظرة المالية الشاملة - بوابة المغرب',
+    platformProfit: 'أرباح المنصة',
+    courierEarnings: 'أرباح المندوب',
+    heldInEscrow: 'محتجز في الضمان',
+    releasedPayouts: 'المدفوعات المُحررة',
+    refundsIssued: 'المبالغ المستردة',
+    locked: 'مقفل',
+    cleared: 'تم التحويل',
+    disputed: 'متنازع عليه',
+    escrowSystemAutomatic: 'نظام الضمان: إصدار تلقائي (عبر OTP)',
+    monthlyRevenueGrowth: 'نمو الإيرادات الشهرية (درهم)',
+    moroccoEscrowFundsAllocation: 'توزيع أموال الضمان - المغرب',
+    topRatedCouriers: 'أفضل المناديب',
+    adminWelcomeMessage: 'مرحباً، مسؤول DeliverX، في لوحة التحكم المالية والتشغيلية.',
+    januaryDecember: 'يناير - ديسمبر 2026',
+    revenueMad: 'الإيرادات (درهم)',
   }
 };
 

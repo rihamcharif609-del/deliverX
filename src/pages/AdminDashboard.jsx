@@ -178,7 +178,7 @@ const AdminDashboard = ({ setUserRole }) => {
       <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
         <div>
           <h1 style={{ fontSize: '28px', marginBottom: '8px', fontWeight: '700' }}>{t('dashboard')}</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Welcome, {user?.name || 'Admin'}, to the DeliverX Admin Financial & Operations Control Panel.</p>
+          <p style={{ color: 'var(--text-secondary)' }}>{t('welcome')} {user?.name || 'Admin'}{t('adminWelcomeMessage')}</p>
         </div>
         <div style={{
           display: 'flex',
@@ -192,14 +192,14 @@ const AdminDashboard = ({ setUserRole }) => {
           fontSize: '13px',
           fontWeight: '600'
         }}>
-          <FaShieldAlt /> Escrow System: AUTOMATIC RELEASE (via OTP)
+          <FaShieldAlt /> {t('escrowSystemAutomatic')}
         </div>
       </div>
 
       {/* CORE FINANCIAL ANALYTICS CARDS */}
       <SectionLoading loading={dashboardLoading} label="Loading admin dashboard..." minHeight="420px">
       <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '15px' }}>Morocco Gateway Financial Overview</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '15px' }}>{t('moroccoGatewayFinancialOverview')}</h3>
       </div>
       <div className="grid grid-3" style={{ marginBottom: '10px', gap: '10px' }}>
         {stats.slice(0, 3).map((stat, index) => (
@@ -215,12 +215,12 @@ const AdminDashboard = ({ setUserRole }) => {
       {/* CHARTS */}
       <div className="grid grid-2" style={{ marginBottom: '30px', gap: '25px' }}>
         <ChartPlaceholder 
-          title="Monthly Revenue Growth (MAD)" 
+          title={t('monthlyRevenueGrowth')} 
           type="bar" 
           values={adminAnalytics?.monthlyRevenue} 
         />
         <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '24px' }}>
-          <h3 style={{ marginBottom: '20px', fontSize: '16px', fontWeight: '600', width: '100%', textAlign: 'left' }}>Morocco Escrow Funds Allocation</h3>
+          <h3 style={{ marginBottom: '20px', fontSize: '16px', fontWeight: '600', width: '100%', textAlign: 'left' }}>{t('moroccoEscrowFundsAllocation')}</h3>
           <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0' }}>
             <div style={{ 
               width: '180px', 
@@ -276,7 +276,7 @@ const AdminDashboard = ({ setUserRole }) => {
           {/* TOP RATED COURIERS */}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Top Rated Couriers</h3>
+            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>{t('moroccoEscrowFundsAllocation')}</h3>
           </div>
           <div className="card" style={{ padding: '20px', borderRadius: '16px', height: 'calc(100% - 40px)', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -369,8 +369,8 @@ const AdminDashboard = ({ setUserRole }) => {
       <div className="card" style={{ padding: '24px', borderRadius: '16px', marginBottom: '30px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
           <div>
-            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Moroccan Gateway Payment Monitor</h3>
-            <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>Track customer credit card payments, platform commissions, escrow status, and execute refunds.</p>
+            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>{t('moroccanGatewayPaymentMonitor')}</h3>
+            <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>{t('paymentMonitorDesc')}</p>
           </div>
 
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -387,7 +387,7 @@ const AdminDashboard = ({ setUserRole }) => {
               <FaSearch size={12} color="gray" />
               <input 
                 type="text" 
-                placeholder="Search payments..."
+                placeholder={t('searchPayments')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{
@@ -417,7 +417,7 @@ const AdminDashboard = ({ setUserRole }) => {
                 cursor: 'pointer'
               }}
             >
-              <option value="all">All Escrow Statuses</option>
+              <option value="all">{t('allEscrowStatuses')}</option>
               <option value="pending">Awaiting Payment</option>
               <option value="held">Held in Escrow</option>
               <option value="released">Released to Courier</option>
@@ -430,14 +430,14 @@ const AdminDashboard = ({ setUserRole }) => {
           <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
-                <th style={{ width: '14%', padding: '8px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Order ID</th>
-                <th style={{ width: '16%', padding: '8px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Sender / Courier</th>
-                <th style={{ width: '14%', padding: '8px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Route</th>
-                <th style={{ width: '11%', padding: '8px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>Total Paid</th>
-                <th style={{ width: '12%', padding: '8px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>Commission (15%)</th>
-                <th style={{ width: '12%', padding: '8px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>Courier Share (85%)</th>
-                <th style={{ width: '11%', padding: '8px', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>Escrow Status</th>
-                <th style={{ width: '10%', padding: '8px', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>Dispute / Action</th>
+                <th style={{ width: '14%', padding: '8px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>{t('orderId')}</th>
+                <th style={{ width: '16%', padding: '8px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>{t('senderCourier')}</th>
+                <th style={{ width: '14%', padding: '8px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>{t('route')}</th>
+                <th style={{ width: '11%', padding: '8px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>{t('totalPaid')}</th>
+                <th style={{ width: '12%', padding: '8px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>{t('commission')}</th>
+                <th style={{ width: '12%', padding: '8px', textAlign: 'right', fontWeight: '600', color: 'var(--text-secondary)' }}>{t('courierShare')}</th>
+                <th style={{ width: '11%', padding: '8px', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>{t('escrowStatus')}</th>
+                <th style={{ width: '10%', padding: '8px', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>{t('disputeAction')}</th>
               </tr>
             </thead>
             <tbody>
@@ -550,8 +550,8 @@ const AdminDashboard = ({ setUserRole }) => {
       <div style={{ display: 'grid', gap: '25px', marginBottom: '30px' }}>
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Recent Deliveries Status</h3>
-            <button className="btn btn-outline" onClick={() => navigate('/admin/deliveries')}>View All</button>
+            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>{t('recentDeliveriesStatus')}</h3>
+            <button className="btn btn-outline" onClick={() => navigate('/admin/deliveries')}>{t('viewAll')}</button>
           </div>
           <DeliveryTable showActions={false} deliveries={deliveries.slice(0, 3)} />
         </div>

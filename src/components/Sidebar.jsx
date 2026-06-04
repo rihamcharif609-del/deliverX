@@ -67,7 +67,7 @@ const Sidebar = ({ userRole = 'sender' }) => {
               {item.label === 'Dashboard' ? t('dashboard') :
                item.label === 'All Deliveries' ? t('allDeliveries') :
                item.label === 'My Deliveries' ? t('myDeliveries') :
-               item.label === 'Courier Verification' ? 'Courier Verification' :
+               item.label === 'Courier Verification' ? t('courierVerification') :
                item.label === 'Manage Users' ? t('manageUsers') :
                item.label === 'Create Delivery' ? t('createDelivery') :
                item.label === 'Track Package' ? t('trackPackage') :
