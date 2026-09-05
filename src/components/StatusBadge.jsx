@@ -12,11 +12,14 @@ const StatusBadge = ({ status }) => {
     cancelled: 'Cancelled',
   };
 
+  const normalizedStatus = status ? status.toLowerCase() : 'pending';
+
   return (
-    <span className={`status-badge ${status}`}>
+    <span className={`status-badge status-${normalizedStatus}`}>
+      <span className="status-badge-dot" />
       {statusMap[status] || status}
     </span>
   );
 };
 
-export default StatusBadge;
+export default StatusBadge;

@@ -5,6 +5,18 @@ import { useNavigate } from 'react-router-dom';
 import { useDelivery } from '../context/DeliveryContext';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { calculatePrice } from '../utils/calculatePrice';
+import { 
+  FaPlusCircle, 
+  FaMapMarkerAlt, 
+  FaMapPin, 
+  FaBox, 
+  FaCalendarAlt, 
+  FaCalculator, 
+  FaCheckCircle, 
+  FaExclamationCircle,
+  FaArrowLeft,
+  FaShieldAlt
+} from 'react-icons/fa';
 
 const initialFormData = {
   pickupAddress: '',
@@ -134,8 +146,8 @@ const CreateDelivery = () => {
 
   const renderError = (field) =>
     errors[field] ? (
-      <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-        {errors[field]}
+      <span className="field-error-message">
+        <FaExclamationCircle style={{ fontSize: '11px' }} /> {errors[field]}
       </span>
     ) : null;
 
@@ -143,30 +155,54 @@ const CreateDelivery = () => {
 
   return (
     <MainLayout userRole="sender" activePage="create-delivery">
-      <div style={{ marginBottom: '30px' }}>
-        <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>{t('createDelivery')}</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>{t('createDeliveryDesc')}</p>
+      {/* ===== HERO PAGE HEADER ===== */}
+      <div className="dashboard-hero-banner" style={{ marginBottom: '28px' }}>
+        <div className="hero-banner-content">
+          <div className="hero-banner-tag">
+            <FaPlusCircle style={{ fontSize: '11px' }} />
+            <span>CREATE SHIPMENT</span>
+          </div>
+          <h1 className="hero-banner-title">
+            Create New Delivery
+          </h1>
+          <p className="hero-banner-subtitle">
+            Fill in package and route details to generate automated price estimates and assign couriers instantly.
+          </p>
+        </div>
+        <div className="hero-banner-actions">
+          <button 
+            type="button"
+            className="hero-banner-btn-primary"
+            onClick={() => navigate('/sender')}
+            style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', boxShadow: 'none' }}
+          >
+            <FaArrowLeft /> Back to Dashboard
+          </button>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} noValidate>
+      <form onSubmit={handleSubmit} noValidate className="create-delivery-form">
         {submitError && (
-          <div
-            style={{
-              marginBottom: '20px',
-              padding: '12px',
-              borderRadius: '8px',
-              background: 'rgba(239, 68, 68, 0.1)',
-              color: '#ef4444',
-              fontSize: '14px',
-            }}
-          >
-            {submitError}
+          <div className="form-submit-error-banner">
+            <FaExclamationCircle size={16} />
+            <span>{submitError}</span>
           </div>
         )}
 
-        <div className="grid grid-5" style={{ gap: '30px' }}>
-          <div className="card">
-            <h3 style={{ marginBottom: '20px' }}>{t('pickupLocation')}</h3>
+        {/* ===== SECTION 1: ROUTE LOCATIONS ===== */}
+        <div className="dashboard-grid grid-5" style={{ gap: '24px', marginBottom: '24px' }}>
+          
+          {/* Pickup Location Card */}
+          <div className="form-section-card">
+            <div className="form-card-header">
+              <div className="form-card-icon-badge pickup">
+                <FaMapMarkerAlt />
+              </div>
+              <div>
+                <h3>{t('pickupLocation') || 'Pickup Location'}</h3>
+                <p>Origin address & contact details</p>
+              </div>
+            </div>
 
             <div className="form-group">
               <label htmlFor="pickupAddress">Pickup Address *</label>
@@ -174,7 +210,7 @@ const CreateDelivery = () => {
                 id="pickupAddress"
                 type="text"
                 name="pickupAddress"
-                className="form-control"
+                className={`form-control ${errors.pickupAddress ? 'has-error' : ''}`}
                 value={formData.pickupAddress}
                 onChange={handleChange}
                 placeholder="e.g. Maarif, Casablanca"
@@ -188,21 +224,21 @@ const CreateDelivery = () => {
                 id="pickupContactName"
                 type="text"
                 name="pickupContactName"
-                className="form-control"
+                className={`form-control ${errors.pickupContactName ? 'has-error' : ''}`}
                 value={formData.pickupContactName}
                 onChange={handleChange}
-                placeholder="Sender or pickup contact"
+                placeholder="Sender or pickup contact name"
               />
               {renderError('pickupContactName')}
             </div>
 
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label htmlFor="pickupContactPhone">Pickup Contact Phone *</label>
               <input
                 id="pickupContactPhone"
                 type="tel"
                 name="pickupContactPhone"
-                className="form-control"
+                className={`form-control ${errors.pickupContactPhone ? 'has-error' : ''}`}
                 value={formData.pickupContactPhone}
                 onChange={handleChange}
                 placeholder="e.g. +212 612345678"
@@ -211,8 +247,17 @@ const CreateDelivery = () => {
             </div>
           </div>
 
-          <div className="card">
-            <h3 style={{ marginBottom: '20px' }}>{t('deliveryLocation')}</h3>
+          {/* Delivery Location Card */}
+          <div className="form-section-card">
+            <div className="form-card-header">
+              <div className="form-card-icon-badge destination">
+                <FaMapPin />
+              </div>
+              <div>
+                <h3>{t('deliveryLocation') || 'Delivery Location'}</h3>
+                <p>Destination address & recipient details</p>
+              </div>
+            </div>
 
             <div className="form-group">
               <label htmlFor="deliveryAddress">Delivery Address *</label>
@@ -220,7 +265,7 @@ const CreateDelivery = () => {
                 id="deliveryAddress"
                 type="text"
                 name="deliveryAddress"
-                className="form-control"
+                className={`form-control ${errors.deliveryAddress ? 'has-error' : ''}`}
                 value={formData.deliveryAddress}
                 onChange={handleChange}
                 placeholder="e.g. Agdal, Rabat"
@@ -234,21 +279,21 @@ const CreateDelivery = () => {
                 id="recipientName"
                 type="text"
                 name="recipientName"
-                className="form-control"
+                className={`form-control ${errors.recipientName ? 'has-error' : ''}`}
                 value={formData.recipientName}
                 onChange={handleChange}
-                placeholder="Who receives the package"
+                placeholder="Person receiving the package"
               />
               {renderError('recipientName')}
             </div>
 
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label htmlFor="recipientPhone">Recipient Phone *</label>
               <input
                 id="recipientPhone"
                 type="tel"
                 name="recipientPhone"
-                className="form-control"
+                className={`form-control ${errors.recipientPhone ? 'has-error' : ''}`}
                 value={formData.recipientPhone}
                 onChange={handleChange}
                 placeholder="e.g. +212 698765432"
@@ -256,12 +301,22 @@ const CreateDelivery = () => {
               {renderError('recipientPhone')}
             </div>
           </div>
+
         </div>
 
-        <div className="card" style={{ marginTop: '30px' }}>
-          <h3 style={{ marginBottom: '20px' }}>{t('packageDetails')}</h3>
+        {/* ===== SECTION 2: PACKAGE DETAILS ===== */}
+        <div className="form-section-card" style={{ marginBottom: '24px' }}>
+          <div className="form-card-header">
+            <div className="form-card-icon-badge package">
+              <FaBox />
+            </div>
+            <div>
+              <h3>{t('packageDetails') || 'Package Specifications'}</h3>
+              <p>Type, weight, value & handling notes</p>
+            </div>
+          </div>
 
-          <div className="grid grid-2" style={{ gap: '20px' }}>
+          <div className="dashboard-grid grid-2" style={{ gap: '20px' }}>
             <div className="form-group">
               <label htmlFor="packageType">{t('packageType')} *</label>
               <select
@@ -271,12 +326,12 @@ const CreateDelivery = () => {
                 value={formData.packageType}
                 onChange={handleChange}
               >
-                <option value="documents">Documents</option>
-                <option value="parcel">Parcel</option>
-                <option value="electronics">Electronics</option>
-                <option value="fragile">Fragile items</option>
-                <option value="food">Food</option>
-                <option value="other">Other</option>
+                <option value="documents">📄 Documents</option>
+                <option value="parcel">📦 Standard Parcel</option>
+                <option value="electronics">💻 Electronics</option>
+                <option value="fragile">🍷 Fragile Items</option>
+                <option value="food">🍕 Food & Goods</option>
+                <option value="other">🏷️ Other</option>
               </select>
             </div>
 
@@ -286,7 +341,7 @@ const CreateDelivery = () => {
                 id="packageWeight"
                 type="number"
                 name="packageWeight"
-                className="form-control"
+                className={`form-control ${errors.packageWeight ? 'has-error' : ''}`}
                 value={formData.packageWeight}
                 onChange={handleChange}
                 placeholder="e.g. 1.5"
@@ -310,7 +365,7 @@ const CreateDelivery = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="declaredValue">Declared value (MAD)</label>
+              <label htmlFor="declaredValue">Declared Value (MAD)</label>
               <input
                 id="declaredValue"
                 type="number"
@@ -318,38 +373,47 @@ const CreateDelivery = () => {
                 className="form-control"
                 value={formData.declaredValue}
                 onChange={handleChange}
-                placeholder="Optional insurance value"
+                placeholder="Optional value for insurance"
                 min="0"
                 step="1"
               />
             </div>
           </div>
 
-          <div className="form-group">
+          <div className="form-group" style={{ marginBottom: 0 }}>
             <label htmlFor="instructions">Special Instructions</label>
             <textarea
               id="instructions"
               name="instructions"
               className="form-control"
-              rows="4"
+              rows="3"
               value={formData.instructions}
               onChange={handleChange}
-              placeholder="Any special instructions for the courier..."
+              placeholder="Any special handling instructions for the courier..."
             />
           </div>
         </div>
 
-        <div className="card" style={{ marginTop: '30px' }}>
-          <h3 style={{ marginBottom: '20px' }}>Schedule & Preferences</h3>
+        {/* ===== SECTION 3: SCHEDULE & PREFERENCES ===== */}
+        <div className="form-section-card" style={{ marginBottom: '24px' }}>
+          <div className="form-card-header">
+            <div className="form-card-icon-badge schedule">
+              <FaCalendarAlt />
+            </div>
+            <div>
+              <h3>Schedule & Preferences</h3>
+              <p>Delivery date, preferred time & urgency level</p>
+            </div>
+          </div>
 
-          <div className="grid grid-2" style={{ gap: '20px' }}>
+          <div className="dashboard-grid grid-3" style={{ gap: '20px' }}>
             <div className="form-group">
               <label htmlFor="deliveryDate">Delivery Date *</label>
               <input
                 id="deliveryDate"
                 type="date"
                 name="deliveryDate"
-                className="form-control"
+                className={`form-control ${errors.deliveryDate ? 'has-error' : ''}`}
                 value={formData.deliveryDate}
                 onChange={handleChange}
                 min={today}
@@ -358,7 +422,7 @@ const CreateDelivery = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="deliveryTime">Delivery Time</label>
+              <label htmlFor="deliveryTime">Preferred Delivery Time</label>
               <input
                 id="deliveryTime"
                 type="time"
@@ -370,7 +434,7 @@ const CreateDelivery = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="priority">Priority</label>
+              <label htmlFor="priority">Speed & Priority</label>
               <select
                 id="priority"
                 name="priority"
@@ -378,61 +442,89 @@ const CreateDelivery = () => {
                 value={formData.priority}
                 onChange={handleChange}
               >
-                <option value="standard">Standard </option>
-                <option value="express">Express </option>
-                <option value="scheduled">Scheduled</option>
+                <option value="standard">⚡ Standard Delivery</option>
+                <option value="express">🚀 Express Delivery (+Surcharge)</option>
+                <option value="scheduled">📅 Scheduled Delivery</option>
               </select>
             </div>
           </div>
         </div>
 
-        <div className="delivery-price-estimate card" style={{ marginTop: '30px' }}>
-          <h3 style={{ marginBottom: '8px' }}>Delivery Price Estimate</h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '16px' }}>
-            Price is calculated automatically. You cannot edit the fee manually.
-          </p>
-
-          <div className="delivery-price-total">
-            <span>Estimated Delivery Fee:</span>
-            <strong>{priceQuote.total.toFixed(2)} MAD</strong>
+        {/* ===== SECTION 4: AUTOMATED PRICE ESTIMATOR ===== */}
+        <div className="form-price-estimator-card" style={{ marginBottom: '30px' }}>
+          <div className="estimator-header">
+            <div className="estimator-title-group">
+              <FaCalculator className="estimator-icon" />
+              <div>
+                <h3>Delivery Price Estimate</h3>
+                <p>Instant automated fee breakdown based on distance, weight and urgency</p>
+              </div>
+            </div>
+            <div className="estimator-total-badge">
+              <span>Fee Total:</span>
+              <strong>{priceQuote.total.toFixed(2)} MAD</strong>
+            </div>
           </div>
 
-          {formData.pickupAddress.trim() && formData.deliveryAddress.trim() ? (
-            <p className="delivery-price-distance">
-              Estimated distance: <strong>{priceQuote.distanceKm} km</strong> (simulated)
-            </p>
-          ) : (
-            <p className="delivery-price-distance">
-              Enter pickup and delivery addresses to include distance in the estimate.
-            </p>
-          )}
+          <div className="estimator-body">
+            {formData.pickupAddress.trim() && formData.deliveryAddress.trim() ? (
+              <div className="estimator-distance-pill">
+                <FaShieldAlt style={{ color: '#2563eb' }} />
+                <span>Estimated Distance: <strong>{priceQuote.distanceKm} km</strong></span>
+              </div>
+            ) : (
+              <p className="estimator-hint">
+                💡 Enter pickup and delivery addresses above to calculate distance fee.
+              </p>
+            )}
 
-          <ul className="delivery-price-breakdown">
-            <li>Base fee: {priceQuote.breakdown.base.toFixed(2)} MAD</li>
-            <li>
-              Distance ({priceQuote.distanceKm} km × 2 MAD):{' '}
-              {priceQuote.breakdown.distance.toFixed(2)} MAD
-            </li>
-            {priceQuote.breakdown.weight > 0 && (
-              <li>Weight surcharge: {priceQuote.breakdown.weight.toFixed(2)} MAD</li>
-            )}
-            {priceQuote.breakdown.express > 0 && (
-              <li>Express delivery: {priceQuote.breakdown.express.toFixed(2)} MAD</li>
-            )}
-          </ul>
+            <div className="estimator-breakdown-grid">
+              <div className="breakdown-item">
+                <span className="breakdown-label">Base Fee</span>
+                <span className="breakdown-value">{priceQuote.breakdown.base.toFixed(2)} MAD</span>
+              </div>
+              <div className="breakdown-item">
+                <span className="breakdown-label">Distance ({priceQuote.distanceKm} km × 2 MAD)</span>
+                <span className="breakdown-value">{priceQuote.breakdown.distance.toFixed(2)} MAD</span>
+              </div>
+              {priceQuote.breakdown.weight > 0 && (
+                <div className="breakdown-item">
+                  <span className="breakdown-label">Weight Surcharge</span>
+                  <span className="breakdown-value">{priceQuote.breakdown.weight.toFixed(2)} MAD</span>
+                </div>
+              )}
+              {priceQuote.breakdown.express > 0 && (
+                <div className="breakdown-item">
+                  <span className="breakdown-label">Express Surcharge</span>
+                  <span className="breakdown-value">{priceQuote.breakdown.express.toFixed(2)} MAD</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'flex-end', gap: '15px' }}>
+        {/* ===== FORM ACTIONS ===== */}
+        <div className="form-action-buttons">
           <button
             type="button"
-            className="btn btn-outline"
+            className="dashboard-btn-outline"
             onClick={() => navigate('/sender')}
             disabled={loading}
+            style={{ width: 'auto', padding: '14px 28px' }}
           >
             Cancel
           </button>
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? <LoadingSpinner inline label="Creating..." size={16} /> : t('submitRequest')}
+          <button 
+            type="submit" 
+            className="dashboard-btn-primary" 
+            disabled={loading}
+            style={{ width: 'auto', padding: '14px 36px', fontSize: '15px' }}
+          >
+            {loading ? <LoadingSpinner inline label="Creating Request..." size={16} /> : (
+              <>
+                <FaCheckCircle /> {t('submitRequest') || 'Submit Delivery Request'}
+              </>
+            )}
           </button>
         </div>
       </form>
@@ -441,3 +533,4 @@ const CreateDelivery = () => {
 };
 
 export default CreateDelivery;
+

@@ -6,7 +6,7 @@ const ChartPlaceholder = ({
   values: customValues, 
   subtitle: customSubtitle,
   legendLabel = 'Revenue (MAD)',
-  color = 'blue'
+  color = '#2563eb'
 }) => {
   if (type === 'bar') {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -14,14 +14,11 @@ const ChartPlaceholder = ({
     const values = customValues || defaultValues;
     const subtitle = customSubtitle || "January - December 2026";
 
-    // Dynamically scale values so that the max bar height is 160px
     const maxValue = Math.max(...values, 1);
-    const heightScale = 160 / maxValue;
-
-    const isCustomColor = color && (color.startsWith('#') || color.startsWith('rgb') || color.startsWith('hsl') || color.startsWith('var'));
+    const heightScale = 150 / maxValue;
 
     return (
-      <div className="chart-placeholder">
+      <div className="chart-placeholder-card">
         <div className="chart-header">
           <div className="chart-title">
             <h3>{title || 'Monthly Deliveries'}</h3>
@@ -30,30 +27,27 @@ const ChartPlaceholder = ({
           <div className="chart-legend">
             <div className="legend-item">
               <div 
-                className={isCustomColor ? "legend-color" : `legend-color ${color}`} 
-                style={isCustomColor ? { backgroundColor: color } : undefined}
+                className="legend-color-dot"
+                style={{ backgroundColor: color }}
               ></div>
               <span>{legendLabel}</span>
             </div>
           </div>
         </div>
-        <div className="chart-bars">
+
+        <div className="chart-bars-wrapper">
           {months.map((month, index) => {
-            const barHeight = values[index] * heightScale;
+            const barHeight = Math.max(values[index] * heightScale, 6);
             return (
               <div key={month} className="bar-container">
                 <div 
-                  className={isCustomColor ? "bar" : `bar ${color}`} 
+                  className="chart-bar"
                   title={`${values[index].toFixed(2)} MAD`}
                   style={{ 
                     height: `${barHeight}px`,
-                    transition: 'height 0.3s ease',
-                    cursor: 'pointer',
-                    background: isCustomColor 
-                      ? `linear-gradient(to top, ${color}, ${color}dd)` 
-                      : undefined
+                    background: `linear-gradient(180deg, ${color} 0%, #3b82f6 100%)`,
                   }}
-                ></div>
+                />
                 <span className="bar-label">{month}</span>
               </div>
             );
@@ -65,7 +59,7 @@ const ChartPlaceholder = ({
 
   if (type === 'pie') {
     return (
-      <div className="chart-placeholder">
+      <div className="chart-placeholder-card">
         <div className="chart-header">
           <div className="chart-title">
             <h3>{title || 'Delivery Status Distribution'}</h3>
@@ -74,17 +68,18 @@ const ChartPlaceholder = ({
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '30px' }}>
           <div style={{ 
-            width: '200px', 
-            height: '200px', 
+            width: '180px', 
+            height: '180px', 
             borderRadius: '50%',
-            background: 'conic-gradient(#2563eb 0% 45%, #10b981 45% 70%, #f59e0b 70% 85%, #ef4444 85% 100%)'
+            background: 'conic-gradient(#2563eb 0% 45%, #10b981 45% 70%, #f59e0b 70% 85%, #ef4444 85% 100%)',
+            boxShadow: '0 8px 24px rgba(37,99,235,0.2)'
           }}></div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px' }}>
-          <div className="legend-item"><div className="legend-color blue"></div><span>Pending (45%)</span></div>
-          <div className="legend-item"><div className="legend-color" style={{background: '#10b981'}}></div><span>In Transit (25%)</span></div>
-          <div className="legend-item"><div className="legend-color" style={{background: '#f59e0b'}}></div><span>Delivered (15%)</span></div>
-          <div className="legend-item"><div className="legend-color" style={{background: '#ef4444'}}></div><span>Cancelled (15%)</span></div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '16px', flexWrap: 'wrap' }}>
+          <div className="legend-item"><div className="legend-color-dot" style={{background: '#2563eb'}}></div><span>Pending (45%)</span></div>
+          <div className="legend-item"><div className="legend-color-dot" style={{background: '#10b981'}}></div><span>In Transit (25%)</span></div>
+          <div className="legend-item"><div className="legend-color-dot" style={{background: '#f59e0b'}}></div><span>Delivered (15%)</span></div>
+          <div className="legend-item"><div className="legend-color-dot" style={{background: '#ef4444'}}></div><span>Cancelled (15%)</span></div>
         </div>
       </div>
     );
@@ -93,4 +88,4 @@ const ChartPlaceholder = ({
   return null;
 };
 
-export default ChartPlaceholder;
+export default ChartPlaceholder;

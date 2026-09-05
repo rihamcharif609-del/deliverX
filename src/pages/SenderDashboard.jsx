@@ -7,7 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import SenderDeliveryTable from '../components/SenderDeliveryTable';
 import { useDelivery } from '../context/DeliveryContext';
 import { useAuth } from '../context/AuthContext';
-import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
+import { SectionLoading } from '../components/LoadingSpinner';
+import { FaPlus, FaSearchLocation, FaBoxes, FaArrowRight, FaBox, FaShieldAlt } from 'react-icons/fa';
 
 const SenderDashboard = ({ navigateTo }) => {
   const { t } = useLanguage();
@@ -40,7 +41,7 @@ const SenderDashboard = ({ navigateTo }) => {
   });
 
   const stats = [
-    { title: 'Total Orders', value: String(deliveries.length), change: 'Your account', icon: 'DX', trend: 'positive' },
+    { title: 'Total Orders', value: String(deliveries.length), change: 'All time', icon: 'DX', trend: 'positive' },
     { title: 'Active Deliveries', value: String(activeDeliveries.length), change: activeDeliveries.length ? 'In progress' : 'None active', icon: 'TR', trend: 'positive' },
     { title: 'Delivered', value: String(deliveries.filter((delivery) => delivery.status === 'delivered').length), change: 'Completed', icon: 'OK', trend: 'positive' },
     { title: 'Total Spent', value: `${totalSpent.toFixed(0)} MAD`, change: 'All time', icon: 'MAD', trend: 'positive' },
@@ -48,55 +49,97 @@ const SenderDashboard = ({ navigateTo }) => {
 
   return (
     <MainLayout userRole="sender" activePage="sender" onNavigate={navigateTo}>
-      <div style={{ marginBottom: '30px' }}>
-        <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>{t('dashboard')}</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          Welcome back, {user?.name || 'Sender'}. Manage your deliveries and track packages.
-        </p>
+      {/* ===== HERO WELCOME BANNER (MATCHING LANDING PAGE HERO) ===== */}
+      <div className="dashboard-hero-banner">
+        <div className="hero-banner-content">
+          <div className="hero-banner-tag">
+            <FaShieldAlt style={{ fontSize: '11px' }} />
+            <span>SENDER PORTAL</span>
+          </div>
+          <h1 className="hero-banner-title">
+            Welcome back, {user?.name || 'Sender'} 👋
+          </h1>
+          <p className="hero-banner-subtitle">
+            Manage your deliveries, track packages in real-time, and get live status updates with DeliverX.
+          </p>
+        </div>
+        <div className="hero-banner-actions">
+          <button 
+            className="hero-banner-btn-primary"
+            onClick={() => navigate('/sender/create')}
+          >
+            <FaPlus /> Create New Delivery
+          </button>
+        </div>
       </div>
 
       <SectionLoading loading={deliveriesLoading} label="Loading dashboard...">
-      <div className="grid grid-4" style={{ marginBottom: '30px' }}>
-        {stats.map((stat, index) => (
-          <StatCard key={index} {...stat} />
-        ))}
-      </div>
+        {/* ===== STATS GRID (ALWAYS HORIZONTAL ROW) ===== */}
+        <div className="stats-row-container" style={{ marginBottom: '28px' }}>
+          {stats.map((stat, index) => (
+            <StatCard key={index} {...stat} />
+          ))}
+        </div>
 
-      <div className="grid grid-5" style={{ marginBottom: '30px' }}>
-        <ChartPlaceholder 
-          title="Monthly Spend History" 
-          type="bar" 
-          values={monthlySpend}
-          subtitle={`Total Spent in ${currentYear}: ${monthlySpend.reduce((a, b) => a + b, 0).toFixed(2)} MAD (All-time: ${totalSpent.toFixed(2)} MAD)`}
-          legendLabel="Spent (MAD)"
-          color="var(--primary-color)"
-        />
-        <div className="card">
-          <h3 style={{ marginBottom: '20px' }}>Quick Actions</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => navigate('/sender/create')}>
-              Create New Delivery
-            </button>
-            <button className="btn btn-outline" style={{ width: '100%' }} onClick={() => navigate('/sender/tracking')}>
-              Track Package
-            </button>
-            <button className="btn btn-outline" style={{ width: '100%' }} onClick={() => navigate('/sender/deliveries')}>
-              View All Deliveries
-            </button>
+        {/* ===== ANALYTICS & QUICK ACTIONS ===== */}
+        <div className="dashboard-grid grid-5" style={{ marginBottom: '28px' }}>
+          <ChartPlaceholder 
+            title="Monthly Spend History" 
+            type="bar" 
+            values={monthlySpend}
+            subtitle={`Total Spent in ${currentYear}: ${monthlySpend.reduce((a, b) => a + b, 0).toFixed(2)} MAD (All-time: ${totalSpent.toFixed(2)} MAD)`}
+            legendLabel="Spent (MAD)"
+            color="#2563eb"
+          />
+
+          <div className="quick-actions-card">
+            <div className="quick-actions-header">
+              <h3>Quick Actions</h3>
+              <p>Common tasks and shortcuts</p>
+            </div>
+            <div className="quick-actions-buttons">
+              <button 
+                className="dashboard-btn-primary" 
+                onClick={() => navigate('/sender/create')}
+              >
+                <FaPlus /> Create New Delivery
+              </button>
+              <button 
+                className="dashboard-btn-outline" 
+                onClick={() => navigate('/sender/tracking')}
+              >
+                <FaSearchLocation /> Track Package
+              </button>
+              <button 
+                className="dashboard-btn-outline" 
+                onClick={() => navigate('/sender/deliveries')}
+              >
+                <FaBoxes /> View All Deliveries
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3>My Recent Deliveries</h3>
-          <button className="btn btn-outline" onClick={() => navigate('/sender/deliveries')}>View All</button>
+        {/* ===== RECENT DELIVERIES ===== */}
+        <div className="recent-deliveries-section">
+          <div className="recent-deliveries-header">
+            <div>
+              <h3>My Recent Deliveries</h3>
+              <p className="recent-deliveries-sub">Your latest package shipments and active orders</p>
+            </div>
+            <button 
+              className="dashboard-btn-outline btn-sm" 
+              onClick={() => navigate('/sender/deliveries')}
+            >
+              View All <FaArrowRight style={{ fontSize: '11px', marginLeft: '4px' }} />
+            </button>
+          </div>
+          <SenderDeliveryTable deliveries={deliveries} limit={2} showActions={false} />
         </div>
-        <SenderDeliveryTable deliveries={deliveries} limit={2} showActions={false} />
-      </div>
       </SectionLoading>
     </MainLayout>
   );
 };
 
 export default SenderDashboard;
+

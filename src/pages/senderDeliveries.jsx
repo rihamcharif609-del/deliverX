@@ -5,13 +5,13 @@ import { useDelivery } from '../context/DeliveryContext';
 import MainLayout from '../layouts/MainLayout';
 import SenderDeliveryTable from '../components/SenderDeliveryTable';
 import PaymentModal from '../components/PaymentModal';
-import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
+import { SectionLoading } from '../components/LoadingSpinner';
+import { FaPlus, FaSearch, FaBox, FaClock, FaTruck, FaCheckCircle, FaTimesCircle, FaBoxes } from 'react-icons/fa';
 
 const SenderDeliveries = ({ userRole }) => {
   const { t } = useLanguage();
   const { deliveries, deliveriesError, deliveriesLoading, fetchDeliveries } = useDelivery();
-  const filters = ['All', 'Pending', 'In Transit', 'Delivered', 'Cancelled'];
-
+  
   const [activeFilter, setActiveFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [payTargetDelivery, setPayTargetDelivery] = useState(null);
@@ -28,91 +28,111 @@ const SenderDeliveries = ({ userRole }) => {
     setIsPaymentOpen(true);
   };
 
+  // Compute status counts for metrics cards
+  const allCount = deliveries.length;
+  const pendingCount = deliveries.filter((d) => ['waiting-courier', 'accepted', 'paid'].includes(d.status)).length;
+  const inTransitCount = deliveries.filter((d) => ['picked-up', 'in-transit'].includes(d.status)).length;
+  const deliveredCount = deliveries.filter((d) => d.status === 'delivered').length;
+  const cancelledCount = deliveries.filter((d) => d.status === 'cancelled').length;
+
+  const filterCards = [
+    { key: 'All', label: 'All Shipments', count: allCount, icon: <FaBoxes />, color: '#2563eb' },
+    { key: 'Pending', label: 'Pending / Unpaid', count: pendingCount, icon: <FaClock />, color: '#f59e0b' },
+    { key: 'In Transit', label: 'In Transit', count: inTransitCount, icon: <FaTruck />, color: '#3b82f6' },
+    { key: 'Delivered', label: 'Delivered', count: deliveredCount, icon: <FaCheckCircle />, color: '#10b981' },
+    { key: 'Cancelled', label: 'Cancelled', count: cancelledCount, icon: <FaTimesCircle />, color: '#ef4444' },
+  ];
+
   return (
     <MainLayout userRole="sender" activePage="sender-deliveries">
-      <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>{t('myDeliveries') || 'My Deliveries'}</h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Manage your Moroccan package delivery requests and payments</p>
-        </div>
-        {userRole === 'sender' && (
-          <button 
-            className="btn btn-primary"
-            onClick={() => navigate('/sender/create')}
-            style={{ 
-              whiteSpace: 'nowrap', 
-              padding: '12px 24px', 
-              borderRadius: '12px',
-              backgroundColor: '#2563eb',
-              fontWeight: '600',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)' 
-            }}
-          >
-            + New Delivery Request
-          </button>
-        )}
-      </div>
-
-      <div style={{ marginBottom: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          {filters.map((filter) => (
-            <button
-              key={filter}
-              className={`btn ${activeFilter === filter ? 'btn-primary' : 'btn-outline'}`}
-              style={{ 
-                padding: '8px 16px', 
-                borderRadius: '8px',
-                fontWeight: '600',
-                background: activeFilter === filter ? '#2563eb' : 'transparent',
-                borderColor: activeFilter === filter ? '#2563eb' : 'var(--border-color)',
-                color: activeFilter === filter ? '#fff' : 'var(--text-secondary)',
-                transition: 'all 0.2s'
-              }}
-              onClick={() => setActiveFilter(filter)}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          <div className="search-box" style={{ margin: 0, width: '250px' }}>
-            <span className="search-icon">🔍</span>
-            <input
-              type="text"
-              placeholder={t('searchPlaceholder') || 'Search ID, cities...'}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
-              style={{
-                background: 'var(--card-background)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-primary)'
-              }}
-            />
+      {/* ===== HERO PAGE HEADER ===== */}
+      <div className="dashboard-hero-banner" style={{ marginBottom: '24px' }}>
+        <div className="hero-banner-content">
+          <div className="hero-banner-tag">
+            <FaBox style={{ fontSize: '11px' }} />
+            <span>MY SHIPMENTS & DELIVERIES</span>
           </div>
+          <h1 className="hero-banner-title">
+            Deliveries Overview
+          </h1>
+          <p className="hero-banner-subtitle">
+            Track, manage, and process payments for all your Moroccan package deliveries in real-time.
+          </p>
+        </div>
+        <div className="hero-banner-actions">
+          <button 
+            className="hero-banner-btn-primary"
+            onClick={() => navigate('/sender/create')}
+          >
+            <FaPlus /> New Delivery Request
+          </button>
         </div>
       </div>
 
+      {/* ===== HORIZONTAL METRIC FILTER CARDS ===== */}
+      <div className="delivery-metrics-row" style={{ marginBottom: '24px' }}>
+        {filterCards.map((card) => {
+          const isActive = activeFilter === card.key;
+          return (
+            <div
+              key={card.key}
+              className={`metric-filter-card ${isActive ? 'active' : ''}`}
+              onClick={() => setActiveFilter(card.key)}
+            >
+              <div className="metric-card-top">
+                <span className="metric-card-icon" style={{ backgroundColor: `${card.color}15`, color: card.color }}>
+                  {card.icon}
+                </span>
+                <span className="metric-card-count" style={{ color: isActive ? card.color : 'var(--text-primary)' }}>
+                  {card.count}
+                </span>
+              </div>
+              <div className="metric-card-label">{card.label}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ===== SEARCH & TOOLBAR ===== */}
+      <div className="deliveries-toolbar">
+        <div className="toolbar-search-box">
+          <FaSearch className="toolbar-search-icon" />
+          <input
+            type="text"
+            placeholder={t('searchPlaceholder') || 'Search by Order ID, pickup, or destination city...'}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="toolbar-search-input"
+          />
+        </div>
+        <div className="toolbar-active-filter-tag">
+          Showing: <strong>{activeFilter}</strong>
+        </div>
+      </div>
+
+      {/* ===== DELIVERIES TABLE ===== */}
       <SectionLoading loading={deliveriesLoading} label="Loading deliveries..." minHeight="280px">
-      <SenderDeliveryTable  
-        deliveries={deliveries}
-        selectedFilter={activeFilter} 
-        searchQuery={searchQuery}
-        onPayClick={handleOpenPayment}
-      />
+        <SenderDeliveryTable  
+          deliveries={deliveries}
+          selectedFilter={activeFilter} 
+          searchQuery={searchQuery}
+          onPayClick={handleOpenPayment}
+        />
       </SectionLoading>
+
       {deliveriesError && (
-        <p style={{ marginTop: '16px', color: '#ef4444' }}>{deliveriesError}</p>
+        <p style={{ marginTop: '16px', color: '#ef4444', fontWeight: '600' }}>{deliveriesError}</p>
       )}
 
-      <div style={{ marginTop: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-          Showing {deliveries.length} delivery requests in total
+      {/* ===== PAGINATION FOOTER ===== */}
+      <div className="deliveries-pagination-footer">
+        <p className="pagination-info">
+          Showing {deliveries.length} delivery request{deliveries.length !== 1 ? 's' : ''} in total
         </p>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn btn-outline" disabled style={{ borderRadius: '8px', padding: '6px 12px' }}>Previous</button>
-          <button className="btn btn-primary" style={{ borderRadius: '8px', padding: '6px 12px', background: '#2563eb' }}>1</button>
-          <button className="btn btn-outline" style={{ borderRadius: '8px', padding: '6px 12px' }}>Next</button>
+        <div className="pagination-controls">
+          <button className="dashboard-btn-outline btn-sm" disabled>Previous</button>
+          <button className="dashboard-btn-primary btn-sm" style={{ minWidth: '36px' }}>1</button>
+          <button className="dashboard-btn-outline btn-sm">Next</button>
         </div>
       </div>
 
@@ -130,3 +150,4 @@ const SenderDeliveries = ({ userRole }) => {
 };
 
 export default SenderDeliveries;
+

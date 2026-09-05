@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MainLayout from '../layouts/MainLayout';
 import StatusBadge from '../components/StatusBadge';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -6,8 +6,25 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useDelivery } from '../context/DeliveryContext';
 import PaymentModal from '../components/PaymentModal';
-import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
-import { FaCreditCard, FaLock, FaKey, FaBox, FaArrowLeft, FaMapMarkerAlt, FaCalendarAlt, FaEnvelope, FaPhoneAlt, FaWhatsapp } from 'react-icons/fa';
+import LoadingSpinner from '../components/LoadingSpinner';
+import { 
+  FaCreditCard, 
+  FaLock, 
+  FaKey, 
+  FaBox, 
+  FaArrowLeft, 
+  FaMapMarkerAlt, 
+  FaCalendarAlt, 
+  FaEnvelope, 
+  FaPhoneAlt, 
+  FaWhatsapp,
+  FaSearchLocation,
+  FaCheck,
+  FaTimes,
+  FaStar,
+  FaShieldAlt,
+  FaTruck
+} from 'react-icons/fa';
 
 const ADMIN_SUPPORT_EMAIL = 'admin@deliverx.com';
 const ADMIN_SUPPORT_PHONE = '+212 600-000000';
@@ -28,18 +45,6 @@ const openWhatsApp = (phone, message) => {
   window.open(url, '_blank', 'noopener,noreferrer');
 };
 
-const whatsappButtonStyle = {
-  width: '100%',
-  marginBottom: '10px',
-  borderRadius: '10px',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: '8px',
-  borderColor: '#25d366',
-  color: '#25d366',
-};
-
 const Tracking = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -55,7 +60,7 @@ const Tracking = () => {
   const [ratingError, setRatingError] = useState('');
   const [ratingSaving, setRatingSaving] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setRatingInput(0);
     setHoverRating(0);
     setCommentInput('');
@@ -64,7 +69,7 @@ const Tracking = () => {
     setRatingSaving(false);
   }, [id]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (deliveries.length === 0) {
       fetchDeliveries('sender').catch(() => {});
     }
@@ -103,10 +108,11 @@ const Tracking = () => {
   if (!delivery) {
     return (
       <MainLayout userRole="sender" activePage="/sender/tracking">
-        <div className="page-container" style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <h2>No Delivery Selected</h2>
-          <p>Please select a delivery from your list to track it.</p>
-          <button className="btn btn-primary" onClick={() => navigate('/sender/deliveries')} style={{ marginTop: '20px' }}>
+        <div className="recent-deliveries-section" style={{ textAlign: 'center', padding: '60px 20px', margin: '40px auto', maxWidth: '600px' }}>
+          <FaSearchLocation style={{ fontSize: '48px', color: 'var(--text-secondary)', marginBottom: '16px' }} />
+          <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>No Delivery Selected</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Please select a delivery from your list to track it.</p>
+          <button className="dashboard-btn-primary" onClick={() => navigate('/sender/deliveries')}>
             Go to My Deliveries
           </button>
         </div>
@@ -177,7 +183,7 @@ const Tracking = () => {
 
   const timeline = getTimeline(delivery.status);
 
-  // Dynamic courier positions on the map based on status
+  // Dynamic courier positions on map based on status
   let courierStyle = {
     position: 'absolute',
     transition: 'all 1s ease-in-out'
@@ -198,87 +204,72 @@ const Tracking = () => {
 
   return (
     <MainLayout userRole="sender" activePage="/sender/tracking">
-      {/* HEADER */}
-      <div style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <button 
-            className="btn btn-outline" 
-            onClick={() => navigate('/sender/deliveries')}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px', 
-              marginBottom: '12px',
-              padding: '6px 12px',
-              borderRadius: '8px'
-            }}
-          >
-            <FaArrowLeft size={12} /> Back to My Deliveries
-          </button>
-          <h1 style={{ fontSize: '32px', marginBottom: '8px' }}>
-            {t('trackPackage') || 'Track Delivery'}
+      {/* ===== HERO PAGE HEADER ===== */}
+      <div className="dashboard-hero-banner" style={{ marginBottom: '28px' }}>
+        <div className="hero-banner-content">
+          <div className="hero-banner-tag">
+            <FaSearchLocation style={{ fontSize: '11px' }} />
+            <span>LIVE PACKAGE TRACKING</span>
+          </div>
+          <h1 className="hero-banner-title">
+            Tracking #{delivery.id}
           </h1>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            Status updates and Moroccan online payment flow for #{delivery.id}
+          <p className="hero-banner-subtitle">
+            Real-time status updates, live courier position, and secure OTP verification.
           </p>
         </div>
-        <StatusBadge status={delivery.status} />
+        <div className="hero-banner-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <StatusBadge status={delivery.status} />
+          <button 
+            type="button"
+            className="hero-banner-btn-primary"
+            onClick={() => navigate('/sender/deliveries')}
+            style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', boxShadow: 'none' }}
+          >
+            <FaArrowLeft /> Back to Deliveries
+          </button>
+        </div>
       </div>
 
-      {/* TOP GRID */}
-      <div
-        className="grid grid-5"
-        style={{
-          gap: '20px',
-          alignItems: 'start',
-          marginBottom: '30px',
-        }}
-      >
-        {/* LEFT SIDE */}
+      {/* ===== TOP GRID LAYOUT ===== */}
+      <div className="dashboard-grid grid-5" style={{ gap: '24px', alignItems: 'start', marginBottom: '28px' }}>
+        
+        {/* LEFT COLUMN */}
         <div>
-          {/* SECURE ONLINE PAYMENT BANNER */}
+          {/* ONLINE PAYMENT REQUIRED BANNER */}
           {delivery.status === 'accepted' && (
-            <div className="card" style={{
-              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.02))',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-              borderRadius: '20px',
-              padding: '24px',
+            <div className="form-section-card" style={{
+              background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08), var(--card-background))',
+              border: '1.5px solid rgba(239, 68, 68, 0.3)',
               marginBottom: '20px',
               textAlign: 'center',
-              boxShadow: '0 4px 15px rgba(239, 68, 68, 0.05)'
             }}>
               <div style={{
                 background: 'rgba(239, 68, 68, 0.15)',
                 color: '#ef4444',
-                width: '60px',
-                height: '60px',
+                width: '56px',
+                height: '56px',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 16px auto',
-                fontSize: '24px'
+                margin: '0 auto 14px auto',
+                fontSize: '22px'
               }}>
                 <FaCreditCard />
               </div>
-              <h3 style={{ color: '#ef4444', margin: '0 0 8px 0', fontSize: '18px', fontWeight: '700' }}>Online Payment Required</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: '1.5', marginBottom: '20px' }}>
-                Courier <strong>{delivery.courier}</strong> has accepted your delivery request! You must complete your secure payment before the courier can begin the pickup.
+              <h3 style={{ color: '#ef4444', margin: '0 0 8px 0', fontSize: '18px', fontWeight: '800' }}>Online Payment Required</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: '1.6', marginBottom: '20px' }}>
+                Courier <strong>{delivery.courier}</strong> has accepted your delivery request! Please complete secure payment to begin pickup.
               </p>
               <button 
-                className="btn btn-primary"
+                className="pay-now-btn"
                 onClick={() => setIsPaymentOpen(true)}
                 style={{
-                  backgroundColor: '#ef4444',
-                  borderColor: '#ef4444',
-                  padding: '12px 24px',
-                  borderRadius: '12px',
-                  fontWeight: '600',
-                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px'
+                  padding: '12px 28px',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  margin: '0 auto'
                 }}
               >
                 <FaLock size={12} /> Proceed to Payment ({delivery.amount} MAD)
@@ -288,38 +279,35 @@ const Tracking = () => {
 
           {/* SECURE DELIVERY CODE CARD (OTP) */}
           {(delivery.status === 'paid' || delivery.status === 'picked-up' || delivery.status === 'in-transit') && delivery.otp && (
-            <div className="card" style={{
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.02))',
-              border: '1px solid rgba(16, 185, 129, 0.2)',
-              borderRadius: '20px',
-              padding: '24px',
+            <div className="form-section-card" style={{
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), var(--card-background))',
+              border: '1.5px solid rgba(16, 185, 129, 0.3)',
               marginBottom: '20px',
               textAlign: 'center',
-              boxShadow: '0 4px 15px rgba(16, 185, 129, 0.05)'
             }}>
               <div style={{
                 background: 'rgba(16, 185, 129, 0.15)',
                 color: '#10b981',
-                width: '60px',
-                height: '60px',
+                width: '56px',
+                height: '56px',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                margin: '0 auto 16px auto',
-                fontSize: '24px'
+                margin: '0 auto 14px auto',
+                fontSize: '22px'
               }}>
                 <FaKey />
               </div>
-              <h3 style={{ color: '#10b981', margin: '0 0 8px 0', fontSize: '18px', fontWeight: '700' }}>Secure Delivery Code (OTP)</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: '1.5', marginBottom: '20px' }}>
-                Share this secure verification code with the courier <strong>upon arrival</strong>. The courier will enter it into their app to release funds and complete delivery.
+              <h3 style={{ color: '#10b981', margin: '0 0 8px 0', fontSize: '18px', fontWeight: '800' }}>Secure Delivery Code (OTP)</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: '1.6', marginBottom: '18px' }}>
+                Provide this verification code to the courier <strong>upon arrival</strong> to confirm dropoff and complete payment.
               </p>
               <div style={{
                 background: 'var(--card-background)',
                 border: '2px dashed #10b981',
                 borderRadius: '12px',
-                padding: '12px 24px',
+                padding: '12px 28px',
                 fontSize: '28px',
                 fontWeight: '800',
                 color: '#10b981',
@@ -332,77 +320,59 @@ const Tracking = () => {
             </div>
           )}
 
-          {/* DELIVERY CARD */}
-          <div className="card" style={{ marginBottom: '20px', borderRadius: '20px' }}>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginBottom: '25px',
-              }}
-            >
+          {/* ORDER SPECIFICATIONS CARD */}
+          <div className="form-section-card" style={{ marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <div>
-                <h2>{delivery.id}</h2>
-                <p style={{ color: 'gray', marginTop: '5px' }}>
-                  Created on {delivery.date}
-                </p>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0 }}>Order Details #{delivery.id}</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '12px', marginTop: '2px', margin: 0 }}>Created on {delivery.date} at {delivery.time}</p>
               </div>
             </div>
 
-            {/* LOCATIONS */}
-            <div
-              className="grid grid-2"
-              style={{
-                gap: '20px',
-                marginBottom: '25px',
-              }}
-            >
-              <div>
-                <p style={{ color: 'gray', marginBottom: '8px', fontSize: '12px' }}>
-                  📤 {t('pickupLocation') || 'Pickup Address'}
-                </p>
-                <strong>{delivery.pickup || delivery.from}</strong>
+            {/* ROUTE POINTS */}
+            <div className="dashboard-grid grid-5" style={{ gap: '16px', marginBottom: '20px' }}>
+              <div style={{ background: 'var(--hover-bg)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '11px', fontWeight: '700', color: '#2563eb', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                  <FaMapMarkerAlt /> Pickup Address
+                </span>
+                <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{delivery.pickup || delivery.from}</strong>
               </div>
-
-              <div>
-                <p style={{ color: 'gray', marginBottom: '8px', fontSize: '12px' }}>
-                  📥 {t('deliveryLocation') || 'Destination Address'}
-                </p>
-                <strong>{delivery.destination || delivery.to}</strong>
+              <div style={{ background: 'var(--hover-bg)', padding: '14px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '11px', fontWeight: '700', color: '#10b981', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                  <FaMapMarkerAlt /> Dropoff Address
+                </span>
+                <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{delivery.destination || delivery.to}</strong>
               </div>
             </div>
 
-            <hr style={{ margin: '20px 0', borderColor: 'var(--border-color)' }} />
-
-            {/* PACKAGE INFO */}
-            <div
-              className="grid grid-3"
-              style={{ gap: '20px' }}
-            >
+            {/* PACKAGE SPECS */}
+            <div className="dashboard-grid grid-3" style={{ gap: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
               <div>
-                <p style={{ color: 'gray', fontSize: '12px' }}>{t('packageType') || 'Package Type'}</p>
-                <strong style={{ display: 'block', marginTop: '4px' }}>{delivery.packageType || delivery.type}</strong>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block' }}>Package Type</span>
+                <strong style={{ fontSize: '13px', color: 'var(--text-primary)', marginTop: '2px', display: 'block' }}>{delivery.packageType || delivery.type}</strong>
               </div>
-
               <div>
-                <p style={{ color: 'gray', fontSize: '12px' }}>{t('weight') || 'Weight'}</p>
-                <strong style={{ display: 'block', marginTop: '4px' }}>{delivery.weight}</strong>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block' }}>Weight</span>
+                <strong style={{ fontSize: '13px', color: 'var(--text-primary)', marginTop: '2px', display: 'block' }}>{delivery.weight || 'N/A'}</strong>
               </div>
-
               <div>
-                <p style={{ color: 'gray', fontSize: '12px' }}>Amount (MAD)</p>
-                <strong style={{ display: 'block', marginTop: '4px', color: '#10b981' }}>
-                  {delivery.amount} MAD
-                </strong>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block' }}>Total Amount</span>
+                <strong style={{ fontSize: '14px', color: '#10b981', marginTop: '2px', display: 'block', fontWeight: '800' }}>{delivery.amount} MAD</strong>
               </div>
             </div>
           </div>
 
-          {/* LIVE MAP */}
-          <div className="card" style={{ borderRadius: '20px' }}>
-            <h3 style={{ marginBottom: '20px' }}>
-              {t('liveLocation') || 'Live Delivery Map'}
-            </h3>
+          {/* LIVE MAP CONTAINER */}
+          <div className="form-section-card">
+            <div className="form-card-header">
+              <div className="form-card-icon-badge pickup">
+                <FaSearchLocation />
+              </div>
+              <div>
+                <h3>{t('liveLocation') || 'Live Delivery Map'}</h3>
+                <p>Real-time courier GPS positioning</p>
+              </div>
+            </div>
 
             <div
               style={{
@@ -417,274 +387,219 @@ const Tracking = () => {
               }}
             >
               {/* PICKUP */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '40px',
-                  left: '80px',
-                }}
-              >
-                <div
-                  style={{
-                    background: 'var(--card-background)',
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-color)',
-                    padding: '6px 10px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    marginBottom: '8px',
-                  }}
-                >
-                  Pickup Point
+              <div style={{ position: 'absolute', top: '40px', left: '60px' }}>
+                <div style={{
+                  background: 'var(--card-background)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-color)',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  marginBottom: '6px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                }}>
+                  📍 Pickup Point
                 </div>
-
-                <div
-                  style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    background: '#2563eb',
-                    marginLeft: '35px',
-                  }}
-                />
+                <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#2563eb', marginLeft: '35px', boxShadow: '0 0 0 4px rgba(37,99,235,0.3)' }} />
               </div>
 
               {/* COURIER */}
               {delivery.status !== 'cancelled' && (
                 <div style={courierStyle}>
-                  <div
-                    style={{
-                      background: 'var(--card-background)',
-                      color: 'var(--text-primary)',
-                      border: '1px solid var(--border-color)',
-                      padding: '6px 10px',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                      marginBottom: '8px',
-                    }}
-                  >
-                    {t('yourCourier') || 'Courier Position'}
+                  <div style={{
+                    background: 'var(--card-background)',
+                    color: 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    marginBottom: '6px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                  }}>
+                    🚚 {t('yourCourier') || 'Courier'}
                   </div>
-
-                  <div
-                    style={{
-                      width: '18px',
-                      height: '18px',
-                      borderRadius: '50%',
-                      background: '#f59e0b',
-                      marginLeft: '40px',
-                      border: darkMode ? '4px solid var(--card-background)' : '4px solid white',
-                    }}
-                  />
+                  <div style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    background: '#f59e0b',
+                    marginLeft: '35px',
+                    border: darkMode ? '4px solid var(--card-background)' : '4px solid white',
+                    boxShadow: '0 0 0 4px rgba(245,158,11,0.3)'
+                  }} />
                 </div>
               )}
 
-              {/* DELIVERY */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '50px',
-                  right: '90px',
-                }}
-              >
-                <div
-                  style={{
-                    background: 'var(--card-background)',
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-color)',
-                    padding: '6px 10px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    marginBottom: '8px',
-                  }}
-                >
-                  Dropoff Point
+              {/* DROPOFF */}
+              <div style={{ position: 'absolute', bottom: '40px', right: '60px' }}>
+                <div style={{
+                  background: 'var(--card-background)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-color)',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  marginBottom: '6px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                }}>
+                  🏁 Dropoff Point
                 </div>
-
-                <div
-                  style={{
-                    width: '12px',
-                    height: '12px',
-                    borderRadius: '50%',
-                    background: '#16a34a',
-                    marginLeft: '30px',
-                  }}
-                />
+                <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#10b981', marginLeft: '35px', boxShadow: '0 0 0 4px rgba(16,185,129,0.3)' }} />
               </div>
 
-              {/* LIVE BADGE */}
+              {/* LIVE TRACKING BADGE */}
               {delivery.status !== 'cancelled' && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    right: '20px',
-                    bottom: '20px',
-                    background: 'var(--card-background)',
-                    color: 'var(--text-primary)',
-                    border: '1px solid var(--border-color)',
-                    padding: '12px 16px',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.08)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '10px',
-                      height: '10px',
-                      borderRadius: '50%',
-                      background: '#22c55e',
-                    }}
-                  />
-                  <span style={{ fontSize: '14px' }}>
-                    Live tracking active
-                  </span>
+                <div style={{
+                  position: 'absolute',
+                  right: '16px',
+                  bottom: '16px',
+                  background: 'var(--card-background)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-color)',
+                  padding: '8px 14px',
+                  borderRadius: '999px',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '12px',
+                  fontWeight: '600'
+                }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981' }} />
+                  <span>Live tracking active</span>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* RIGHT SIDE */}
+        {/* RIGHT COLUMN */}
         <div>
-          {/* COURIER CARD */}
-          <div className="card" style={{ marginBottom: '20px', borderRadius: '20px' }}>
-            <h3 style={{ marginBottom: '20px' }}>
-              {t('yourCourier') || 'Assigned Courier'}
-            </h3>
+          {/* ESTIMATED ARRIVAL CARD */}
+          <div className="form-section-card" style={{
+            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08), var(--card-background))',
+            border: '1.5px solid rgba(37, 99, 235, 0.25)',
+            textAlign: 'center',
+            marginBottom: '20px'
+          }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>
+              {t('estimatedDelivery') || 'Estimated Arrival'}
+            </p>
+
+            <h2 style={{ margin: '8px 0', fontSize: '32px', fontWeight: '900', color: 'var(--text-primary)', letterSpacing: '-0.5px' }}>
+              {delivery.status === 'delivered' ? 'Delivered' : delivery.status === 'cancelled' ? 'Cancelled' : 'Today'}
+            </h2>
+
+            <span className="stat-change-badge" style={{ background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb', padding: '4px 12px' }}>
+              {delivery.status === 'delivered' 
+                ? 'Completed' 
+                : delivery.status === 'cancelled' 
+                ? 'None' 
+                : (delivery.courierArrival ? `Arrival by ${delivery.courierArrival}` : 'Waiting pickup')}
+            </span>
+          </div>
+
+          {/* ASSIGNED COURIER CARD */}
+          <div className="form-section-card" style={{ marginBottom: '20px' }}>
+            <div className="form-card-header">
+              <div className="form-card-icon-badge pickup">
+                <FaTruck />
+              </div>
+              <div>
+                <h3>{t('yourCourier') || 'Assigned Courier'}</h3>
+                <p>Driver contact & credentials</p>
+              </div>
+            </div>
 
             {delivery.courier ? (
               <>
-                <div
-                  style={{
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '18px' }}>
+                  <div style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '15px',
-                    marginBottom: '20px',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: '60px',
-                      height: '60px',
-                      borderRadius: '50%',
-                      background: '#2563eb',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontWeight: 'bold',
-                      fontSize: '22px',
-                    }}
-                  >
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontWeight: '800',
+                    fontSize: '18px',
+                    boxShadow: '0 4px 14px rgba(37,99,235,0.3)'
+                  }}>
                     {courierInitials}
                   </div>
 
                   <div>
-                    <h3>{courierName}</h3>
-                    <p style={{ color: 'gray', fontSize: '13px', marginTop: '4px' }}>
-                      {delivery.courierRating || '4.8'} rating · Morocco active courier
-                    </p>
+                    <h4 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>{courierName}</h4>
+                    <span style={{ fontSize: '12px', color: '#f59e0b', fontWeight: '600', marginTop: '2px', display: 'block' }}>
+                      ★ {delivery.courierRating || '4.8'} rating · Verified Courier
+                    </span>
                   </div>
                 </div>
 
-                <hr style={{ margin: '20px 0', borderColor: 'var(--border-color)' }} />
-
-                <div style={{ display: 'grid', gap: '12px', marginBottom: '18px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '18px', background: 'var(--hover-bg)', padding: '12px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
                     <FaCalendarAlt style={{ color: '#2563eb' }} />
                     <span>Accepted: {acceptedAt}</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                    <FaMapMarkerAlt style={{ color: '#10b981' }} />
-                    <span>{delivery.pickup || delivery.from} to {delivery.destination || delivery.to}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--text-secondary)', fontSize: '13px' }}>
-                    <FaEnvelope style={{ color: '#f59e0b' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    <FaEnvelope style={{ color: '#8b5cf6' }} />
                     <span>{courierEmail}</span>
                   </div>
                 </div>
 
                 <button
-                  className="btn btn-outline"
+                  className="dashboard-btn-outline"
                   onClick={() => { window.location.href = `tel:${courierPhone}`; }}
-                  style={{
-                    width: '100%',
-                    marginBottom: '10px',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px'
-                  }}
+                  style={{ marginBottom: '10px' }}
                 >
-                  <FaPhoneAlt size={12} /> {courierPhone}
+                  <FaPhoneAlt size={12} /> Call Courier ({courierPhone})
                 </button>
                 <button
-                  className="btn btn-outline"
+                  className="dashboard-btn-outline"
                   onClick={() => openWhatsApp(
                     courierPhone,
                     `Hello, I am tracking my delivery request #${delivery?.id || ''}.`
                   )}
-                  style={whatsappButtonStyle}
+                  style={{ borderColor: '#25d366', color: '#25d366', background: 'rgba(37,211,102,0.06)' }}
                 >
-                  <FaWhatsapp size={14} /> {t('messageCourier')}
+                  <FaWhatsapp size={14} /> Message via WhatsApp
                 </button>
               </>
             ) : (
-              <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-secondary)' }}>
-                <div style={{ fontSize: '32px', marginBottom: '10px' }}><FaBox /></div>
-                <p style={{ fontSize: '13px' }}>Searching for nearest available couriers in Casablanca...</p>
+              <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--text-secondary)' }}>
+                <FaBox style={{ fontSize: '28px', color: '#2563eb', marginBottom: '8px' }} />
+                <p style={{ fontSize: '13px', margin: 0 }}>Searching for nearest available couriers...</p>
               </div>
             )}
           </div>
 
-          {/* COURIER RATING CARD */}
+          {/* RATING CARD */}
           {delivery.status === 'delivered' && delivery.courier && (
-            <div className="card" style={{ marginBottom: '20px', borderRadius: '20px', padding: '24px' }}>
-              <h3 style={{ marginBottom: '12px' }}>
-                Rate Your Courier
-              </h3>
+            <div className="form-section-card" style={{ marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '12px' }}>Rate Your Courier</h3>
               
               {delivery.ratingGiven || ratingSubmitted ? (
                 <div style={{ textAlign: 'center', padding: '10px 0' }}>
-                  <div style={{ fontSize: '32px', color: '#facc15', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '28px', color: '#facc15', marginBottom: '8px' }}>
                     {'★'.repeat(delivery.ratingGiven || ratingInput)}
                     {'☆'.repeat(5 - (delivery.ratingGiven || ratingInput))}
                   </div>
-                  <p style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                  <p style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>
                     Thank you! You rated {delivery.courier} {(delivery.ratingGiven || ratingInput)} stars.
                   </p>
-                  {(delivery.ratingComment || commentInput) && (
-                    <div style={{
-                      marginTop: '12px',
-                      padding: '10px 14px',
-                      background: 'var(--hover-bg)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                      fontStyle: 'italic',
-                      color: 'var(--text-secondary)'
-                    }}>
-                      "{delivery.ratingComment || commentInput}"
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div>
-                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '14px' }}>
                     How was your delivery experience with {delivery.courier}?
                   </p>
-                  {ratingError && (
-                    <p style={{ fontSize: '12px', color: '#ef4444', marginBottom: '12px', textAlign: 'center' }}>
-                      {ratingError}
-                    </p>
-                  )}
                   
-                  {/* Star Rating Select */}
-                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '16px' }}>
                     {[1, 2, 3, 4, 5].map((star) => (
                       <span
                         key={star}
@@ -692,9 +607,9 @@ const Tracking = () => {
                         onMouseEnter={() => setHoverRating(star)}
                         onMouseLeave={() => setHoverRating(0)}
                         style={{
-                          fontSize: '32px',
+                          fontSize: '28px',
                           cursor: 'pointer',
-                          color: star <= (hoverRating || ratingInput) ? '#facc15' : '#e5e7eb',
+                          color: star <= (hoverRating || ratingInput) ? '#facc15' : 'var(--border-color)',
                           transition: 'color 0.15s ease'
                         }}
                       >
@@ -702,34 +617,9 @@ const Tracking = () => {
                       </span>
                     ))}
                   </div>
-                  
-                  {/* Comment Input */}
-                  <div style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      Leave a comment (optional)
-                    </label>
-                    <textarea
-                      placeholder="Share details of your experience..."
-                      value={commentInput}
-                      onChange={(e) => setCommentInput(e.target.value)}
-                      rows="3"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color)',
-                        background: 'var(--card-background)',
-                        color: 'var(--text-primary)',
-                        fontSize: '13px',
-                        resize: 'vertical',
-                        outline: 'none',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-                  
+
                   <button
-                    className="btn btn-primary"
+                    className="dashboard-btn-primary"
                     disabled={ratingInput === 0 || isRatingSaving}
                     onClick={async () => {
                       setRatingError('');
@@ -743,213 +633,108 @@ const Tracking = () => {
                         setRatingSaving(false);
                       }
                     }}
-                    style={{
-                      width: '100%',
-                      padding: '10px 0',
-                      borderRadius: '10px',
-                      backgroundColor: ratingInput === 0 || isRatingSaving ? 'var(--border-color)' : '#2563eb',
-                      borderColor: ratingInput === 0 || isRatingSaving ? 'var(--border-color)' : '#2563eb',
-                      fontWeight: '600',
-                      cursor: ratingInput === 0 || isRatingSaving ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.2s'
-                    }}
                   >
-                    {isRatingSaving ? (
-                      <LoadingSpinner inline label="Saving rating..." size={14} />
-                    ) : 'Submit Rating'}
+                    {isRatingSaving ? 'Saving Rating...' : 'Submit Rating'}
                   </button>
                 </div>
               )}
             </div>
           )}
 
-          {/* QUICK ACTIONS */}
-          <div className="card" style={{ marginBottom: '20px', borderRadius: '20px' }}>
-            <h3 style={{ marginBottom: '20px' }}>
-              Quick Actions
-            </h3>
-
-            <button
-              className="btn btn-outline"
-              onClick={() => { window.location.href = supportHref; }}
-              style={{
-                width: '100%',
-                marginBottom: '10px',
-                borderRadius: '10px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px'
-              }}
-            >
-              <FaEnvelope size={12} /> {t('contactSupport') || 'Contact Support'}
-            </button>
-
-            <button
-              className="btn btn-outline"
-              onClick={() => openWhatsApp(
-                ADMIN_SUPPORT_PHONE,
-                `Hello Admin, I need support with my delivery request #${delivery?.id || ''}.`
-              )}
-              style={whatsappButtonStyle}
-            >
-              <FaWhatsapp size={14} /> {t('messageAdmin')}
-            </button>
-
-            {delivery.status !== 'cancelled' && delivery.status !== 'delivered' && (
+          {/* QUICK ACTIONS CARD */}
+          <div className="form-section-card">
+            <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px' }}>Quick Support</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <button
-                className="btn btn-outline"
-                style={{
-                  width: '100%',
-                  color: 'red',
-                  borderRadius: '10px'
-                }}
-                disabled={cancellingDeliveryId === delivery.id}
-                onClick={handleCancelDelivery}
+                className="dashboard-btn-outline"
+                onClick={() => { window.location.href = supportHref; }}
               >
-                {cancellingDeliveryId === delivery.id ? (
-                  <LoadingSpinner inline label="Cancelling..." size={14} />
-                ) : (t('cancelDelivery') || 'Cancel Delivery')}
+                <FaEnvelope size={12} /> Contact Email Support
               </button>
-            )}
+
+              <button
+                className="dashboard-btn-outline"
+                onClick={() => openWhatsApp(
+                  ADMIN_SUPPORT_PHONE,
+                  `Hello Admin, I need support with my delivery request #${delivery?.id || ''}.`
+                )}
+                style={{ borderColor: '#25d366', color: '#25d366', background: 'rgba(37,211,102,0.06)' }}
+              >
+                <FaWhatsapp size={14} /> WhatsApp Support
+              </button>
+
+              {delivery.status !== 'cancelled' && delivery.status !== 'delivered' && (
+                <button
+                  className="dashboard-btn-outline"
+                  style={{ borderColor: '#ef4444', color: '#ef4444', background: 'rgba(239,68,68,0.06)' }}
+                  disabled={cancellingDeliveryId === delivery.id}
+                  onClick={handleCancelDelivery}
+                >
+                  {cancellingDeliveryId === delivery.id ? 'Cancelling...' : 'Cancel Delivery Request'}
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* ETA */}
-          <div
-            className="card"
-            style={{
-              border: '2px solid var(--primary-light)',
-              background: darkMode ? 'rgba(37, 99, 235, 0.15)' : '#eff6ff',
-              textAlign: 'center',
-              borderRadius: '20px'
-            }}
-          >
-            <p style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-              {t('estimatedDelivery') || 'Estimated Arrival'}
-            </p>
-
-            <h1
-              style={{
-                margin: '10px 0',
-                fontSize: '38px',
-                color: 'var(--text-primary)',
-              }}
-            >
-              {delivery.status === 'delivered' ? 'Delivered' : delivery.status === 'cancelled' ? 'Cancelled' : 'Today'}
-            </h1>
-
-            <strong style={{ color: 'var(--text-primary)' }}>
-              {delivery.status === 'delivered' 
-                ? 'Completed' 
-                : delivery.status === 'cancelled' 
-                ? 'None' 
-                : (delivery.courierArrival ? `by ${delivery.courierArrival}` : 'Waiting pickup')}
-            </strong>
-          </div>
         </div>
       </div>
 
-      {/* TIMELINE */}
-      <div className="card" style={{ borderRadius: '20px' }}>
-        <h2 style={{ marginBottom: '30px' }}>
+      {/* ===== DELIVERY TIMELINE JOURNEY ===== */}
+      <div className="form-section-card">
+        <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '24px' }}>
           {t('deliveryTimeline') || 'Delivery Journey'}
-        </h2>
+        </h3>
 
-        {timeline.map((step, index) => (
-          <div
-            key={index}
-            style={{
-              display: 'flex',
-              gap: '20px',
-              marginBottom: '35px',
-              position: 'relative',
-            }}
-          >
-            {/* ICON */}
-            <div
-              style={{
-                width: '40px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
-              <div
-                style={{
-                  width: '28px',
-                  height: '28px',
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+          {timeline.map((step, index) => (
+            <div key={index} style={{ display: 'flex', gap: '18px', position: 'relative', minHeight: '64px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{
+                  width: '30px',
+                  height: '30px',
                   borderRadius: '50%',
                   background: step.cancelled
                     ? '#ef4444'
                     : step.completed
-                    ? '#16a34a'
-                    : '#e5e7eb',
+                    ? '#10b981'
+                    : 'var(--border-color)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'white',
-                  fontSize: '14px',
-                }}
-              >
-                {step.cancelled ? '✗' : step.completed ? '✓' : ''}
-              </div>
-
-              {index !== timeline.length - 1 && (
-                <div
-                  style={{
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  boxShadow: step.completed ? '0 0 10px rgba(16,185,129,0.3)' : 'none'
+                }}>
+                  {step.cancelled ? <FaTimes /> : step.completed ? <FaCheck /> : (index + 1)}
+                </div>
+                {index !== timeline.length - 1 && (
+                  <div style={{
                     width: '2px',
                     flex: 1,
-                    background: step.completed
-                      ? '#16a34a'
-                      : '#e5e7eb',
-                    minHeight: '50px',
-                  }}
-                />
-              )}
-            </div>
-
-            {/* CONTENT */}
-            <div style={{ flex: 1 }}>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <h3 style={{ color: step.cancelled ? '#ef4444' : 'inherit' }}>{step.title}</h3>
-
-                {step.current && (
-                  <span
-                    style={{
-                      border: '1px solid #2563eb',
-                      color: '#2563eb',
-                      padding: '4px 10px',
-                      borderRadius: '20px',
-                      fontSize: '12px',
-                    }}
-                  >
-                    Current
-                  </span>
+                    background: step.completed ? '#10b981' : 'var(--border-color)',
+                    margin: '4px 0'
+                  }} />
                 )}
               </div>
 
-              <p
-                style={{
-                  color: 'gray',
-                  margin: '6px 0',
-                  fontSize: '13px'
-                }}
-              >
-                {step.description}
-              </p>
-
-              <small style={{ color: '#94a3b8' }}>
-                🕒 {step.time}
-              </small>
+              <div style={{ flex: 1, paddingBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h4 style={{ fontSize: '15px', fontWeight: '700', color: step.cancelled ? '#ef4444' : 'var(--text-primary)', margin: 0 }}>
+                    {step.title}
+                  </h4>
+                  {step.current && (
+                    <span className="status-badge status-in-transit">
+                      <span className="status-badge-dot" /> Current Step
+                    </span>
+                  )}
+                </div>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0' }}>{step.description}</p>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>🕒 {step.time}</span>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Payment Gateway Modal */}
@@ -963,3 +748,4 @@ const Tracking = () => {
 };
 
 export default Tracking;
+
