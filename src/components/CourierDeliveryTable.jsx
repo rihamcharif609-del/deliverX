@@ -82,31 +82,25 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
   };
 
   return (
-    <div className="table-container" style={{
-      background: 'var(--card-background)',
-      border: '1px solid var(--border-color)',
-      borderRadius: '16px',
-      overflow: 'hidden',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-    }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <div className="table-container dashboard-table-card">
+      <table className="dashboard-table">
         <thead>
-          <tr style={{ borderBottom: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.02)' }}>
-            <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600' }}>ID</th>
-            <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600' }}>Sender</th>
-            <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600' }}>Route</th>
-            <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600' }}>Package Info</th>
-            <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600' }}>Payment Status</th>
-            <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600' }}>Status</th>
-            <th style={{ padding: '16px', textAlign: 'left', fontWeight: '600' }}>Your Earnings</th>
-            <th style={{ padding: '16px', textAlign: 'center', fontWeight: '600' }}>Actions</th>
+          <tr>
+            <th>ID</th>
+            <th>Sender</th>
+            <th>Route</th>
+            <th>Package Info</th>
+            <th>Payment Status</th>
+            <th>Status</th>
+            <th>Your Earnings</th>
+            <th style={{ textAlign: 'center' }}>Actions</th>
           </tr>
         </thead>
 
         <tbody>
           {filteredData.length === 0 ? (
             <tr>
-              <td colSpan="8" style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+              <td colSpan="8" className="empty-table-cell">
                 No active delivery requests. Go to "Available Deliveries" to accept new orders!
               </td>
             </tr>
@@ -114,55 +108,73 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
             filteredData.map((d) => {
               const courierEarnings = d.amount - (d.commission || (d.amount * 0.15));
               return (
-                <tr key={d.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background-color 0.2s' }}>
-                  <td style={{ padding: '16px', fontWeight: '700', color: 'var(--text-primary)' }}>{d.id}</td>
+                <tr key={d.id} className="table-row-hover">
+                  <td className="cell-id">{d.id}</td>
                   
-                  <td style={{ padding: '16px', fontWeight: '500' }}>
+                  <td style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
                     {d.customer || 'John Sender'}
                   </td>
 
-                  <td style={{ padding: '16px' }}>
-                    <p style={{ margin: '0 0 4px 0', fontSize: '13px' }}>
-                      <strong style={{ color: '#2563eb' }}>From:</strong> {d.pickup || d.from}
-                    </p>
-                    <p style={{ margin: 0, fontSize: '13px' }}>
-                      <strong style={{ color: '#10b981' }}>To:</strong> {d.destination || d.to}
-                    </p>
+                  <td>
+                    <div className="route-cell">
+                      <div className="route-from">
+                        <span className="route-dot from-dot" />
+                        <span className="route-text">{d.pickup || d.from}</span>
+                      </div>
+                      <div className="route-to">
+                        <span className="route-dot to-dot" />
+                        <span className="route-text">{d.destination || d.to}</span>
+                      </div>
+                    </div>
                   </td>
 
-                  <td style={{ padding: '16px' }}>
-                    <p style={{ margin: '0 0 2px 0', fontWeight: '500' }}>{d.packageType || d.type}</p>
-                    <p style={{ margin: 0, color: 'gray', fontSize: '11px' }}>{d.weight}</p>
+                  <td>
+                    <div className="package-cell">
+                      <span className="package-title">{d.packageType || d.type || 'Standard Package'}</span>
+                      <span className="package-weight">{d.weight || 'Standard Weight'}</span>
+                    </div>
                   </td>
 
-                  <td style={{ padding: '16px' }}>
+                  <td>
                     <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '4px 12px',
+                      borderRadius: '999px',
                       fontSize: '11px',
-                      fontWeight: '600',
+                      fontWeight: '700',
                       backgroundColor: d.paymentStatus === 'held' || d.paymentStatus === 'released' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                      color: d.paymentStatus === 'held' || d.paymentStatus === 'released' ? '#10b981' : '#ef4444'
+                      color: d.paymentStatus === 'held' || d.paymentStatus === 'released' ? '#10b981' : '#ef4444',
+                      border: d.paymentStatus === 'held' || d.paymentStatus === 'released' ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(239, 68, 68, 0.25)'
                     }}>
+                      <span style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: d.paymentStatus === 'held' || d.paymentStatus === 'released' ? '#10b981' : '#ef4444'
+                      }} />
                       {d.paymentStatus === 'held' ? 'Held in Escrow' : d.paymentStatus === 'released' ? 'Released' : 'Pending Unpaid'}
                     </span>
                   </td>
 
-                  <td style={{ padding: '16px' }}>
+                  <td>
                     <StatusBadge status={d.status} />
                   </td>
 
-                  <td style={{ padding: '16px', fontWeight: '700', color: '#10b981' }}>
-                    {courierEarnings.toFixed(2)} MAD
+                  <td>
+                    <span className="amount-value" style={{ fontSize: '15px' }}>
+                      {courierEarnings.toFixed(2)} MAD
+                    </span>
                   </td>
 
-                  <td style={{ padding: '16px', textAlign: 'center' }}>
+                  <td style={{ textAlign: 'center' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                     {onViewDetails && (
                       <button
                         type="button"
-                        className="btn btn-outline"
-                        style={{ padding: '4px 10px', fontSize: '11px' }}
+                        className="dashboard-btn-outline btn-sm"
+                        style={{ padding: '4px 12px', fontSize: '12px' }}
                         onClick={() => onViewDetails(d)}
                       >
                         View
@@ -170,29 +182,34 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
                     )}
                     {d.status === 'accepted' && (
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ fontSize: '11px', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}>
+                        <span style={{ 
+                          fontSize: '11px', 
+                          color: '#ef4444', 
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          gap: '5px', 
+                          fontWeight: '700',
+                          background: 'rgba(239, 68, 68, 0.1)',
+                          border: '1px solid rgba(239, 68, 68, 0.25)',
+                          padding: '3px 10px',
+                          borderRadius: '999px'
+                        }}>
                           <FaLock size={10} /> Locked
                         </span>
-                        <span style={{ fontSize: '10px', color: 'gray' }}>Awaiting sender payment</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Awaiting sender payment</span>
                       </div>
                     )}
 
                     {d.status === 'paid' && (
                       <button 
-                        className="btn btn-primary"
+                        className="dashboard-btn-primary btn-sm"
                         onClick={() => handleUpdateState(d.id, 'picked-up')}
                         style={{
-                          backgroundColor: '#2563eb',
-                          color: '#fff',
-                          border: 'none',
-                          padding: '6px 12px',
-                          borderRadius: '8px',
+                          background: '#2563eb',
+                          width: 'auto',
+                          padding: '7px 14px',
                           fontSize: '12px',
-                          fontWeight: '600',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          cursor: 'pointer'
+                          borderRadius: '8px'
                         }}
                       >
                         <FaBoxOpen size={12} /> Confirm Pickup
@@ -201,20 +218,15 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
 
                     {d.status === 'picked-up' && (
                       <button 
-                        className="btn btn-primary"
+                        className="dashboard-btn-primary btn-sm"
                         onClick={() => handleUpdateState(d.id, 'in-transit')}
                         style={{
-                          backgroundColor: '#eab308',
-                          color: '#000',
-                          border: 'none',
-                          padding: '6px 12px',
-                          borderRadius: '8px',
+                          background: '#f59e0b',
+                          boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+                          width: 'auto',
+                          padding: '7px 14px',
                           fontSize: '12px',
-                          fontWeight: '600',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          cursor: 'pointer'
+                          borderRadius: '8px'
                         }}
                       >
                         <FaRoute size={12} /> Start Transit
@@ -223,21 +235,15 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
 
                     {d.status === 'in-transit' && (
                       <button 
-                        className="btn btn-primary"
+                        className="dashboard-btn-primary btn-sm"
                         onClick={() => handleOpenOtpModal(d.id)}
                         style={{
-                          backgroundColor: '#10b981',
-                          color: '#fff',
-                          border: 'none',
-                          padding: '6px 12px',
-                          borderRadius: '8px',
+                          background: '#10b981',
+                          boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                          width: 'auto',
+                          padding: '7px 16px',
                           fontSize: '12px',
-                          fontWeight: '600',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                          borderRadius: '8px'
                         }}
                       >
                         <FaKey size={12} /> Verify OTP
@@ -245,13 +251,13 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
                     )}
 
                     {d.status === 'delivered' && (
-                      <span style={{ color: '#10b981', fontWeight: '600', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ color: '#10b981', fontWeight: '700', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                         <FaCheckCircle size={14} /> Completed
                       </span>
                     )}
 
                     {d.status === 'cancelled' && (
-                      <span style={{ color: 'gray', fontStyle: 'italic', fontSize: '13px' }}>Cancelled</span>
+                      <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic', fontSize: '13px' }}>Cancelled</span>
                     )}
                     </div>
                   </td>
@@ -264,98 +270,80 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
 
       {/* OTP SECURE VERIFICATION POPUP MODAL */}
       {showOtpModal && (
-        <div className="payment-modal-backdrop" style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.75)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000,
-          backdropFilter: 'blur(5px)'
-        }} onClick={() => setShowOtpModal(false)}>
-          <div className="payment-modal-card" style={{
-            background: 'var(--card-background)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '20px',
-            padding: '30px',
-            width: '100%',
-            maxWidth: '400px',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
-            animation: 'fadeIn 0.3s ease'
-          }} onClick={(e) => e.stopPropagation()}>
+        <div className="courier-modal-backdrop" onClick={() => setShowOtpModal(false)}>
+          <div className="courier-modal-card" style={{ maxWidth: '440px' }} onClick={(e) => e.stopPropagation()}>
             
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '6px', borderRadius: '50%', display: 'flex' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ 
+                  backgroundColor: 'rgba(16, 185, 129, 0.15)', 
+                  color: '#10b981', 
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  padding: '8px', 
+                  borderRadius: '12px', 
+                  display: 'flex' 
+                }}>
                   <FaKey size={16} />
                 </span>
-                <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>Secure Delivery Verification</h3>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)' }}>Secure Delivery Verification</h3>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>DeliverX OTP System</span>
+                </div>
               </div>
               <button 
                 onClick={() => setShowOtpModal(false)}
-                style={{ background: 'none', border: 'none', color: 'gray', cursor: 'pointer', fontSize: '16px' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '16px', padding: '4px' }}
               >
                 <FaTimes />
               </button>
             </div>
 
             {otpSuccess ? (
-              <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <FaCheckCircle size={48} style={{ color: '#10b981', marginBottom: '16px', animation: 'successIcon 0.5s ease-out' }} />
-                <h4 style={{ color: '#10b981', margin: '0 0 8px 0', fontSize: '18px' }}>OTP Code Correct!</h4>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>
-                  Delivery completed successfully. Escrow funds and earnings have been credited to your wallet balance.
+              <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                <FaCheckCircle size={56} style={{ color: '#10b981', marginBottom: '16px', filter: 'drop-shadow(0 4px 12px rgba(16, 185, 129, 0.35))' }} />
+                <h4 style={{ color: '#10b981', margin: '0 0 8px 0', fontSize: '20px', fontWeight: '800' }}>OTP Code Correct!</h4>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '14px', margin: 0, lineHeight: '1.6' }}>
+                  Delivery completed successfully. Escrow funds and earnings have been credited to your Moroccan wallet.
                 </p>
               </div>
             ) : (
               <form onSubmit={handleVerifyOtp}>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '20px' }}>
-                  Ask the sender to give you the 4-digit code shown on their tracking screen. Entering it correctly completes delivery and releases your earnings.
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '20px' }}>
+                  Ask the recipient/sender for the 4-digit code shown on their tracking screen. Entering it correctly confirms delivery and instantly releases your earnings.
                 </p>
 
                 {otpError && (
-                  <div style={{
-                    backgroundColor: 'rgba(239, 68, 68, 0.12)',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                    color: '#ef4444',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    marginBottom: '16px',
-                    lineHeight: '1.4'
-                  }}>
-                    ⚠️ {otpError}
+                  <div className="form-submit-error-banner" style={{ marginBottom: '20px' }}>
+                    <span>⚠️ {otpError}</span>
                   </div>
                 )}
 
                 <div className="form-group" style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: '600' }}>
+                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     4-Digit Delivery Code (OTP)
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. 4821"
+                    placeholder="• • • •"
                     maxLength="4"
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
                     style={{
                       width: '100%',
-                      padding: '12px 16px',
-                      borderRadius: '10px',
-                      background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid var(--border-color)',
+                      padding: '14px 16px',
+                      borderRadius: '12px',
+                      background: 'var(--hover-bg)',
+                      border: '2px solid rgba(16, 185, 129, 0.4)',
                       color: 'var(--text-primary)',
-                      fontSize: '20px',
-                      fontWeight: '700',
-                      letterSpacing: '8px',
+                      fontSize: '26px',
+                      fontWeight: '800',
+                      letterSpacing: '14px',
                       textAlign: 'center',
-                      fontFamily: 'monospace'
+                      fontFamily: 'monospace',
+                      outline: 'none',
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
@@ -363,7 +351,7 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button
                     type="button"
-                    className="btn btn-outline"
+                    className="dashboard-btn-outline"
                     onClick={() => setShowOtpModal(false)}
                     style={{ flex: 1, padding: '12px', borderRadius: '10px' }}
                     disabled={isVerifying}
@@ -372,7 +360,7 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
                   </button>
                   <button
                     type="submit"
-                    className="btn btn-primary"
+                    className="dashboard-btn-primary"
                     style={{
                       flex: 1.5,
                       padding: '12px',
@@ -380,12 +368,13 @@ const CourierDeliveryTable = ({ selectedFilter = 'All', searchQuery = '', onView
                       backgroundColor: '#10b981',
                       border: 'none',
                       color: '#fff',
-                      fontWeight: '600',
+                      fontWeight: '700',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '8px',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)'
                     }}
                     disabled={isVerifying}
                   >

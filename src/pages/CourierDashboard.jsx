@@ -18,11 +18,15 @@ import {
   FaArrowRight, 
   FaBuilding, 
   FaIdCard, 
-  FaMoneyCheckAlt 
+  FaMoneyCheckAlt,
+  FaMotorcycle,
+  FaBoxes,
+  FaShieldAlt,
+  FaStar
 } from 'react-icons/fa';
 import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
 
-const CourierDashboard = () => {
+const CourierDashboard = ({ navigateTo }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -190,12 +194,12 @@ const CourierDashboard = () => {
     }
   });
 
-  // Dynamic stats for cards
+  // Dynamic stats for cards (using DeliverX icon mappings)
   const stats = [
-    { title: 'Completed Today', value: completedTodayCount.toString(), change: '+2', icon: '✅', trend: 'positive' },
-    { title: 'Today\'s Earnings', value: `${earningsToday.toFixed(0)} MAD`, change: earningsToday > 0 ? `+${earningsToday} MAD` : '0 MAD', icon: '💸', trend: 'positive' },
-    { title: 'Active Deliveries', value: activeDeliveries.length.toString(), change: activeDeliveries.length > 0 ? 'Active' : 'Idle', icon: '🚚', trend: activeDeliveries.length > 0 ? 'positive' : 'negative' },
-    { title: 'Courier Rating', value: String(myCourierInfo.rating.toFixed(1)), change: `${myCourierInfo.ratingsCount} reviews`, icon: '⭐', trend: 'positive' },
+    { title: 'Completed Today', value: completedTodayCount.toString(), change: '+2 today', icon: 'OK', trend: 'positive' },
+    { title: "Today's Earnings", value: `${earningsToday.toFixed(0)} MAD`, change: earningsToday > 0 ? `+${earningsToday} MAD` : '0 MAD', icon: 'MAD', trend: 'positive' },
+    { title: 'Active Deliveries', value: activeDeliveries.length.toString(), change: activeDeliveries.length > 0 ? 'In progress' : 'Idle', icon: 'TR', trend: activeDeliveries.length > 0 ? 'positive' : 'negative' },
+    { title: 'Courier Rating', value: String(myCourierInfo.rating.toFixed(1)), change: `${myCourierInfo.ratingsCount} reviews`, icon: 'DX', trend: 'positive' },
   ];
 
   const handleAcceptNearby = async (id) => {
@@ -249,152 +253,109 @@ const CourierDashboard = () => {
   };
 
   return (
-    <MainLayout userRole="courier" activePage="courier">
-      {/* HEADER SECTION */}
-      <div style={{ marginBottom: '30px' }}>
-        <h1 style={{ fontSize: '28px', marginBottom: '8px', fontWeight: '700' }}>{t('dashboard')}</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>Welcome back, {currentCourierName}. Here is your delivery performance and earnings summary.</p>
+    <MainLayout userRole="courier" activePage="courier" onNavigate={navigateTo}>
+      {/* ===== HERO WELCOME BANNER (MATCHING LANDING PAGE HERO) ===== */}
+      <div className="dashboard-hero-banner" style={{ marginBottom: '28px' }}>
+        <div className="hero-banner-content">
+          <div className="hero-banner-tag">
+            <FaMotorcycle style={{ fontSize: '11px' }} />
+            <span>COURIER PORTAL</span>
+          </div>
+          <h1 className="hero-banner-title">
+            Welcome back, {currentCourierName} ⚡
+          </h1>
+          <p className="hero-banner-subtitle">
+            Deliver packages reliably across Morocco, track your daily earnings in real-time, and manage instant escrow bank payouts.
+          </p>
+        </div>
+        <div className="hero-banner-actions">
+          <button 
+            className="hero-banner-btn-primary"
+            onClick={() => navigate('/courier/available')}
+          >
+            <FaBoxes /> View Available Deliveries
+          </button>
+        </div>
       </div>
 
-      {/* STATS OVERVIEW CARDS */}
+      {/* STATS OVERVIEW CARDS (ALWAYS HORIZONTAL ROW) */}
       <SectionLoading loading={dashboardLoading} label="Loading courier dashboard..." minHeight="360px">
-      <div className="grid grid-4" style={{ marginBottom: '30px', gap: '20px' }}>
-        {stats.map((stat, index) => (
-          <StatCard key={index} {...stat} />
-        ))}
-      </div>
+        <div className="stats-row-container" style={{ marginBottom: '28px' }}>
+          {stats.map((stat, index) => (
+            <StatCard key={index} {...stat} />
+          ))}
+        </div>
 
-      {/* PREMIUM ESCROW & WALLET SYSTEM SECTION */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1e1b4b 0%, #311042 100%)',
-        borderRadius: '16px',
-        padding: '30px',
-        color: '#fff',
-        marginBottom: '30px',
-        boxShadow: '0 8px 32px rgba(170, 59, 255, 0.15)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        {/* Background glowing decorations */}
-        <div style={{
-          position: 'absolute',
-          top: '-50%',
-          right: '-10%',
-          width: '300px',
-          height: '300px',
-          background: 'radial-gradient(circle, rgba(168,85,247,0.3) 0%, transparent 70%)',
-          pointerEvents: 'none'
-        }} />
-        <div style={{
-          position: 'absolute',
-          bottom: '-40%',
-          left: '10%',
-          width: '200px',
-          height: '200px',
-          background: 'radial-gradient(circle, rgba(59,130,246,0.2) 0%, transparent 70%)',
-          pointerEvents: 'none'
-        }} />
-
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '45px',
-                height: '45px',
-                borderRadius: '10px',
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <FaWallet size={20} color="#c084fc" />
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#fff' }}>Moroccan Payout Wallet</h3>
-                <p style={{ margin: 0, fontSize: '12px', color: '#cbd5e1' }}>Escrow protected payments & instant local bank transfers</p>
-              </div>
+      {/* ===== PREMIUM MOROCCAN PAYOUT WALLET (DELIVERX SLATE NAVY & EMERALD) ===== */}
+      <div className="courier-wallet-card">
+        <div className="courier-wallet-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <div className="courier-wallet-badge">
+              <FaWallet size={20} />
             </div>
-            
-            <button 
-              className="btn" 
-              onClick={() => setShowWithdrawModal(true)}
-              style={{
-                background: 'linear-gradient(90deg, #aa3bff, #8b5cf6)',
-                color: '#fff',
-                padding: '10px 24px',
-                borderRadius: '10px',
-                fontWeight: '600',
-                border: 'none',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 4px 14px rgba(168, 85, 247, 0.4)',
-                transition: 'all 0.2s'
-              }}
-            >
-              Withdraw Earnings
-            </button>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '19px', fontWeight: '800', color: '#ffffff' }}>Moroccan Payout Wallet</h3>
+              <p style={{ margin: '3px 0 0', fontSize: '13px', color: 'rgba(255, 255, 255, 0.65)' }}>
+                Escrow protected courier earnings & instant Moroccan bank transfers (RIB)
+              </p>
+            </div>
+          </div>
+          
+          <button 
+            className="wallet-withdraw-btn" 
+            onClick={() => setShowWithdrawModal(true)}
+          >
+            <FaMoneyCheckAlt size={16} /> Withdraw Earnings
+          </button>
+        </div>
+
+        <div className="courier-wallet-grid">
+          {/* RELEASED BALANCE */}
+          <div className="courier-balance-card released">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="wallet-card-label">Released Balance (Cleared)</span>
+              <span className="wallet-pill" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.35)' }}>
+                CLEARED
+              </span>
+            </div>
+            <h2 className="wallet-card-amount" style={{ color: '#34d399' }}>
+              {courierEarnings.released.toFixed(2)}<span>MAD</span>
+            </h2>
+            <p className="wallet-card-desc">Fully settled. Ready for instant bank transfer to your Moroccan account.</p>
           </div>
 
-          <div className="grid grid-3" style={{ gap: '20px' }}>
-            {/* RELEASED BALANCE */}
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '12px',
-              padding: '20px'
-            }}>
-              <span style={{ fontSize: '12px', color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Released Balance (Cleared)</span>
-              <h1 style={{ margin: '8px 0', fontSize: '32px', fontWeight: '800', color: '#4ade80' }}>
-                {courierEarnings.released.toFixed(2)} <span style={{ fontSize: '18px' }}>MAD</span>
-              </h1>
-              <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8' }}>Fully settled. Ready for instant bank transfer.</p>
+          {/* PENDING BALANCE */}
+          <div className="courier-balance-card pending">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="wallet-card-label">Held In Escrow (Pending)</span>
+              <span className="wallet-pill" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.35)' }}>
+                PROTECTED
+              </span>
             </div>
+            <h2 className="wallet-card-amount" style={{ color: '#fbbf24' }}>
+              {courierEarnings.pending.toFixed(2)}<span>MAD</span>
+            </h2>
+            <p className="wallet-card-desc">Held in secure escrow. Requires 4-digit recipient OTP delivery code to release.</p>
+          </div>
 
-            {/* PENDING BALANCE */}
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '12px',
-              padding: '20px'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '12px', color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Held In Escrow (Pending)</span>
-                <span style={{
-                  padding: '2px 8px',
-                  borderRadius: '10px',
-                  fontSize: '9px',
-                  backgroundColor: 'rgba(234, 179, 8, 0.2)',
-                  color: '#facc15',
-                  fontWeight: '600'
-                }}>PROTECTED</span>
-              </div>
-              <h1 style={{ margin: '8px 0', fontSize: '32px', fontWeight: '800', color: '#facc15' }}>
-                {courierEarnings.pending.toFixed(2)} <span style={{ fontSize: '18px' }}>MAD</span>
-              </h1>
-              <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8' }}>Requires 4-digit customer delivery code to release.</p>
+          {/* TOTAL EARNINGS */}
+          <div className="courier-balance-card total">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="wallet-card-label">Total Earned (All-Time)</span>
+              <span className="wallet-pill" style={{ background: 'rgba(37, 99, 235, 0.25)', color: '#60a5fa', border: '1px solid rgba(96, 165, 250, 0.35)' }}>
+                NET PAYOUT
+              </span>
             </div>
-
-            {/* TOTAL EARNINGS */}
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '12px',
-              padding: '20px'
-            }}>
-              <span style={{ fontSize: '12px', color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Earned (All-Time)</span>
-              <h1 style={{ margin: '8px 0', fontSize: '32px', fontWeight: '800', color: '#60a5fa' }}>
-                {courierEarnings.total.toFixed(2)} <span style={{ fontSize: '18px' }}>MAD</span>
-              </h1>
-              <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8' }}>Platform fee (15%) already deducted.</p>
-            </div>
+            <h2 className="wallet-card-amount" style={{ color: '#60a5fa' }}>
+              {courierEarnings.total.toFixed(2)}<span>MAD</span>
+            </h2>
+            <p className="wallet-card-desc">Total cumulative earnings. DeliverX platform commission (15%) already deducted.</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-5" style={{ marginBottom: '30px', gap: '25px' }}>
+      {/* ===== ANALYTICS & AVAILABLE REQUESTS ===== */}
+      <div className="dashboard-grid grid-5" style={{ marginBottom: '28px' }}>
         {/* CHART FOR ANALYTICS */}
         <ChartPlaceholder 
           title="Monthly Earnings Tracker" 
@@ -406,16 +367,20 @@ const CourierDashboard = () => {
         />
 
         {/* AVAILABLE REQUESTS CARD */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="nearby-deliveries-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-            <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Available Deliveries Nearby</h3>
+            <div>
+              <h3 style={{ margin: 0, fontWeight: '800', fontSize: '18px', color: 'var(--text-primary)' }}>Available Deliveries Nearby</h3>
+              <p style={{ margin: '2px 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>Ready for courier assignment in Morocco</p>
+            </div>
             <span style={{
-              padding: '3px 8px',
-              backgroundColor: 'var(--accent-bg)',
-              color: 'var(--accent)',
-              borderRadius: '10px',
+              padding: '4px 12px',
+              backgroundColor: 'rgba(37, 99, 235, 0.08)',
+              color: '#2563eb',
+              border: '1px solid rgba(37, 99, 235, 0.25)',
+              borderRadius: '999px',
               fontSize: '11px',
-              fontWeight: '600'
+              fontWeight: '700'
             }}>
               {availableDeliveries.length} nearby
             </span>
@@ -436,48 +401,50 @@ const CourierDashboard = () => {
                 gap: '8px',
                 flex: 1
               }}>
-                <p style={{ fontWeight: '600' }}>All Caught Up!</p>
-                <p style={{ fontSize: '12px' }}>There are no waiting deliveries in Morocco currently. Check back soon.</p>
+                <p style={{ fontWeight: '700', fontSize: '15px', color: 'var(--text-primary)', margin: 0 }}>All Caught Up!</p>
+                <p style={{ fontSize: '13px', margin: 0 }}>There are no waiting deliveries in Morocco currently. Check back soon.</p>
               </div>
             ) : (
               availableDeliveries.map((delivery) => {
-                // Moroccan commission calculation for displaying payout
                 const courierPayout = delivery.amount - delivery.commission;
 
                 return (
-                  <div key={delivery.id} style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center',
-                    padding: '16px',
-                    backgroundColor: 'var(--hover-bg)',
-                    borderRadius: '12px',
-                    border: '1px solid var(--border-color)',
-                    transition: 'all 0.2s'
-                  }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                        <span style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-primary)' }}>{delivery.id}</span>
-                        <span style={{ fontSize: '11px', padding: '2px 6px', backgroundColor: 'var(--border-color)', borderRadius: '4px', color: 'var(--text-secondary)' }}>
+                  <div key={delivery.id} className="nearby-delivery-item">
+                    <div style={{ flex: 1, minWidth: 0, paddingRight: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <span className="cell-id">{delivery.id}</span>
+                        <span style={{ 
+                          fontSize: '11px', 
+                          padding: '2px 8px', 
+                          backgroundColor: 'var(--card-background)', 
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '6px', 
+                          color: 'var(--text-secondary)',
+                          fontWeight: '600'
+                        }}>
                           {delivery.packageType || delivery.type}
                         </span>
                       </div>
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 2px 0' }}>
-                        <strong style={{ color: '#3b82f6' }}>From:</strong> {delivery.pickup.split(',')[0]}
-                      </p>
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
-                        <strong style={{ color: '#10b981' }}>To:</strong> {delivery.destination.split(',')[0]}
-                      </p>
+                      <div className="route-cell" style={{ gap: '3px' }}>
+                        <div className="route-from">
+                          <span className="route-dot from-dot" />
+                          <span className="route-text" style={{ fontSize: '12px' }}>{delivery.pickup.split(',')[0]}</span>
+                        </div>
+                        <div className="route-to">
+                          <span className="route-dot to-dot" />
+                          <span className="route-text" style={{ fontSize: '12px' }}>{delivery.destination.split(',')[0]}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontWeight: '700', color: '#10b981', fontSize: '16px', marginBottom: '8px' }}>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <p className="amount-value" style={{ fontSize: '17px', margin: '0 0 8px 0' }}>
                         {courierPayout.toFixed(0)} MAD
                       </p>
                       <button 
-                        className="btn btn-primary" 
+                        className="dashboard-btn-primary btn-sm" 
                         onClick={() => handleAcceptNearby(delivery.id)}
                         disabled={acceptingDeliveryId === delivery.id}
-                        style={{ padding: '6px 14px', fontSize: '12px', borderRadius: '8px', cursor: acceptingDeliveryId === delivery.id ? 'not-allowed' : 'pointer' }}
+                        style={{ width: 'auto', padding: '6px 16px', fontSize: '12px', borderRadius: '8px' }}
                       >
                         {acceptingDeliveryId === delivery.id ? (
                           <LoadingSpinner inline label="Accepting..." size={12} />
@@ -490,101 +457,128 @@ const CourierDashboard = () => {
             )}
           </div>
           <button 
-            className="btn btn-outline" 
-            style={{ width: '100%', marginTop: '15px' }}
+            className="dashboard-btn-outline" 
+            style={{ width: '100%', marginTop: '16px' }}
             onClick={() => navigate('/courier/available')}
           >
-            View All Available Requests
+            View All Available Requests <FaArrowRight style={{ fontSize: '11px', marginLeft: '6px' }} />
           </button>
         </div>
       </div>
 
-      {/* RECENT REVIEWS SECTION */}
-      <div className="card" style={{ padding: '24px', borderRadius: '16px', marginBottom: '30px' }}>
-        <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px', marginBottom: '20px' }}>Recent Reviews & Feedback</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+      {/* ===== RECENT REVIEWS SECTION ===== */}
+      <div className="courier-section-card">
+        <div style={{ marginBottom: '20px' }}>
+          <h3 style={{ margin: 0, fontWeight: '800', fontSize: '18px', color: 'var(--text-primary)' }}>Recent Reviews & Feedback</h3>
+          <p style={{ margin: '3px 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>Customer ratings and delivery feedback from completed shipments</p>
+        </div>
+        <div className="courier-reviews-grid">
           {courierRatingSummary.latestComments.length > 0 ? (
             courierRatingSummary.latestComments.slice(0, 3).map(d => (
-              <div key={d.id} style={{
-                padding: '16px',
-                borderRadius: '12px',
-                border: '1px solid var(--border-color)',
-                background: 'var(--hover-bg)'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)' }}>{d.deliveryCode}</span>
-                  <span style={{ color: '#facc15', fontSize: '12px' }}>
-                    {'★'.repeat(d.ratingGiven)}{'☆'.repeat(5 - d.ratingGiven)}
-                  </span>
+              <div key={d.id} className="courier-review-card">
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <span className="cell-id" style={{ fontSize: '12px' }}>{d.deliveryCode}</span>
+                    <span style={{ color: '#f59e0b', fontSize: '13px', letterSpacing: '2px' }}>
+                      {'★'.repeat(d.ratingGiven)}{'☆'.repeat(5 - d.ratingGiven)}
+                    </span>
+                  </div>
+                  {d.ratingComment ? (
+                    <p style={{ fontSize: '13px', color: 'var(--text-primary)', margin: '0 0 12px 0', lineHeight: '1.5', fontStyle: 'italic' }}>
+                      "{d.ratingComment}"
+                    </p>
+                  ) : (
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', fontStyle: 'italic', margin: '0 0 12px 0' }}>
+                      No written comment left.
+                    </p>
+                  )}
                 </div>
-                <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                  Customer: <strong>{d.customer}</strong> • {d.date}
-                </p>
-                {d.ratingComment ? (
-                  <p style={{ fontSize: '12px', fontStyle: 'italic', color: 'var(--text-primary)', margin: 0 }}>
-                    "{d.ratingComment}"
-                  </p>
-                ) : (
-                  <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>
-                    No comment left.
-                  </p>
-                )}
+                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                  <span>Customer: <strong style={{ color: 'var(--text-primary)' }}>{d.customer}</strong></span>
+                  <span>{d.date}</span>
+                </div>
               </div>
             ))
           ) : (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '20px', color: 'var(--text-secondary)', fontSize: '13px' }}>
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '28px', color: 'var(--text-secondary)', fontSize: '13px' }}>
               No reviews or ratings received yet.
             </div>
           )}
         </div>
       </div>
 
-      {/* ACTIVE DELIVERIES SECTION */}
-      <div style={{ marginBottom: '30px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>My Active Deliveries</h3>
-          <button className="btn btn-outline" onClick={() => navigate('/courier/deliveries')}>Manage Deliveries</button>
+      {/* ===== ACTIVE DELIVERIES SECTION ===== */}
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontWeight: '800', fontSize: '18px', color: 'var(--text-primary)' }}>My Active Deliveries</h3>
+            <p style={{ margin: '2px 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>Orders assigned to you and currently awaiting pickup or in transit</p>
+          </div>
+          <button className="dashboard-btn-outline btn-sm" onClick={() => navigate('/courier/deliveries')}>
+            Manage Deliveries <FaArrowRight style={{ fontSize: '11px', marginLeft: '6px' }} />
+          </button>
         </div>
         <CourierDeliveryTable selectedFilter="Pending" />
       </div>
 
-      {/* WITHDRAW HISTORY SECTION */}
-      <div className="card" style={{ padding: '24px', borderRadius: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-          <FaHistory color="var(--primary-color)" />
-          <h3 style={{ margin: 0, fontWeight: '600', fontSize: '18px' }}>Withdrawal Payout History</h3>
+      {/* ===== WITHDRAW HISTORY SECTION ===== */}
+      <div className="courier-section-card">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+          <div className="form-card-icon-badge pickup" style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(37,99,235,0.1)', color: '#2563eb' }}>
+            <FaHistory size={18} />
+          </div>
+          <div>
+            <h3 style={{ margin: 0, fontWeight: '800', fontSize: '18px', color: 'var(--text-primary)' }}>Withdrawal Payout History</h3>
+            <p style={{ margin: '2px 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>Record of bank transfers to Moroccan bank accounts</p>
+          </div>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div className="table-container dashboard-table-card">
+          <table className="dashboard-table">
             <thead>
-              <tr style={{ borderBottom: '2px solid var(--border-color)' }}>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Transaction ID</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Payout Date</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Method</th>
-                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: 'var(--text-secondary)' }}>Amount</th>
-                <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600', color: 'var(--text-secondary)' }}>Status</th>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Payout Date</th>
+                <th>Method / Bank</th>
+                <th>Amount</th>
+                <th style={{ textAlign: 'center' }}>Status</th>
               </tr>
             </thead>
             <tbody>
               {courierEarnings.withdrawHistory && courierEarnings.withdrawHistory.length > 0 ? (
                 courierEarnings.withdrawHistory.map((w, index) => (
-                  <tr key={index} style={{ borderBottom: '1px solid var(--border-color)', hover: { backgroundColor: 'var(--hover-bg)' } }}>
-                    <td style={{ padding: '14px 12px', fontWeight: '700', color: 'var(--text-primary)' }}>{w.id}</td>
-                    <td style={{ padding: '14px 12px' }}>{w.date}</td>
-                    <td style={{ padding: '14px 12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <FaBuilding size={12} color="gray" /> {w.bankName || 'Local Bank Transfer'}
+                  <tr key={index} className="table-row-hover">
+                    <td className="cell-id">{w.id}</td>
+                    <td style={{ color: 'var(--text-primary)', fontWeight: '500' }}>{w.date}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)', fontWeight: '500' }}>
+                        <FaBuilding size={13} style={{ color: '#2563eb' }} /> {w.bankName || 'Local Bank Transfer'}
+                      </div>
                     </td>
-                    <td style={{ padding: '14px 12px', fontWeight: '700', color: '#10b981' }}>{w.amount.toFixed(2)} MAD</td>
-                    <td style={{ padding: '14px 12px', textAlign: 'center' }}>
+                    <td>
+                      <span className="amount-value" style={{ fontSize: '15px' }}>
+                        {w.amount.toFixed(2)} MAD
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
                       <span style={{
-                        padding: '4px 10px',
-                        borderRadius: '20px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '4px 12px',
+                        borderRadius: '999px',
                         fontSize: '11px',
-                        fontWeight: '600',
-                        backgroundColor: w.status === 'approved' ? 'rgba(16, 185, 129, 0.12)' : w.status === 'rejected' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(234, 179, 8, 0.12)',
-                        color: w.status === 'approved' ? '#10b981' : w.status === 'rejected' ? '#ef4444' : '#eab308'
+                        fontWeight: '700',
+                        backgroundColor: w.status === 'approved' ? 'rgba(16, 185, 129, 0.12)' : w.status === 'rejected' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                        color: w.status === 'approved' ? '#10b981' : w.status === 'rejected' ? '#ef4444' : '#f59e0b',
+                        border: w.status === 'approved' ? '1px solid rgba(16, 185, 129, 0.25)' : w.status === 'rejected' ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(245, 158, 11, 0.25)'
                       }}>
+                        <span style={{
+                          width: '6px',
+                          height: '6px',
+                          borderRadius: '50%',
+                          backgroundColor: w.status === 'approved' ? '#10b981' : w.status === 'rejected' ? '#ef4444' : '#f59e0b'
+                        }} />
                         {w.status.toUpperCase()}
                       </span>
                     </td>
@@ -592,7 +586,7 @@ const CourierDashboard = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  <td colSpan="5" className="empty-table-cell">
                     No withdrawal transactions found.
                   </td>
                 </tr>
@@ -603,43 +597,22 @@ const CourierDashboard = () => {
       </div>
       </SectionLoading>
 
-      {/* WITHDRAW EARNINGS MODAL */}
+      {/* ===== WITHDRAW EARNINGS MODAL ===== */}
       {showWithdrawModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          animation: 'fadeIn 0.2s ease-out'
-        }}>
-          <div style={{
-            background: 'var(--card-background)',
-            border: '1px solid var(--border-color)',
-            width: '450px',
-            maxWidth: '90%',
-            borderRadius: '16px',
-            padding: '30px',
-            boxShadow: 'var(--shadow-lg)',
-            position: 'relative'
-          }}>
+        <div className="courier-modal-backdrop" onClick={handleCloseWithdrawModal}>
+          <div className="courier-modal-card" onClick={(e) => e.stopPropagation()}>
             {/* Close Button */}
             <button 
               onClick={handleCloseWithdrawModal}
               style={{
                 position: 'absolute',
-                top: '15px',
-                right: '15px',
+                top: '18px',
+                right: '18px',
                 border: 'none',
                 background: 'transparent',
                 cursor: 'pointer',
-                color: 'var(--text-secondary)'
+                color: 'var(--text-secondary)',
+                padding: '4px'
               }}
             >
               <FaTimes size={18} />
@@ -647,88 +620,90 @@ const CourierDashboard = () => {
 
             {!withdrawSuccess ? (
               <form onSubmit={handleWithdrawSubmit}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                  <FaMoneyCheckAlt size={20} color="var(--primary-color)" />
-                  <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '700' }}>Withdraw Earnings</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    color: '#10b981',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <FaMoneyCheckAlt size={20} />
+                  </div>
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: 'var(--text-primary)' }}>Withdraw Earnings</h2>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Instant Moroccan Bank Payout</span>
+                  </div>
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                  Transfer your cleared released balance directly into your Moroccan bank account.
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: '1.5' }}>
+                  Transfer your cleared released balance directly into your Moroccan bank account (CIH, Attijari, BP, BMCE, etc.).
                 </p>
 
                 {withdrawError && (
-                  <div style={{
-                    padding: '12px',
-                    borderRadius: '8px',
-                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                    color: '#ef4444',
-                    fontSize: '13px',
-                    fontWeight: '500',
-                    marginBottom: '15px',
-                    border: '1px solid rgba(239, 68, 68, 0.15)'
-                  }}>
-                    {withdrawError}
+                  <div className="form-submit-error-banner" style={{ marginBottom: '16px' }}>
+                    <span>⚠️ {withdrawError}</span>
                   </div>
                 )}
 
                 <div style={{
-                  padding: '15px',
-                  backgroundColor: 'var(--hover-bg)',
-                  borderRadius: '10px',
-                  border: '1px solid var(--border-color)',
+                  padding: '16px 20px',
+                  backgroundColor: 'rgba(16, 185, 129, 0.06)',
+                  borderRadius: '14px',
+                  border: '1px solid rgba(16, 185, 129, 0.25)',
                   marginBottom: '20px'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     <span>Available Released Balance</span>
-                    <span>Max Payout</span>
+                    <span>Status</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '6px' }}>
-                    <span style={{ fontSize: '24px', fontWeight: '700', color: '#10b981' }}>
-                      {courierEarnings.released.toFixed(2)} MAD
+                    <span style={{ fontSize: '26px', fontWeight: '900', color: '#10b981', fontVariantNumeric: 'tabular-nums' }}>
+                      {courierEarnings.released.toFixed(2)} <span style={{ fontSize: '15px' }}>MAD</span>
                     </span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>100% Secure</span>
+                    <span className="wallet-pill" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.35)' }}>
+                      100% Secure
+                    </span>
                   </div>
                 </div>
 
                 {/* Amount input */}
-                <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Amount to Withdraw (MAD)</label>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                    Amount to Withdraw (MAD) *
+                  </label>
                   <input 
                     type="number"
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
                     placeholder="Enter amount, e.g. 500"
                     required
+                    className="form-control"
                     style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-color)',
-                      background: 'var(--card-background)',
-                      color: 'var(--text-primary)',
-                      outline: 'none',
-                      fontSize: '14px',
-                      boxSizing: 'border-box'
+                      borderRadius: '10px',
+                      padding: '12px 14px',
+                      fontSize: '14px'
                     }}
                   />
                 </div>
 
                 {/* Bank selection */}
-                <div style={{ marginBottom: '15px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>Destination Bank (Morocco)</label>
+                <div className="form-group" style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                    Destination Bank (Morocco) *
+                  </label>
                   <select 
                     value={bankName}
                     onChange={(e) => setBankName(e.target.value)}
+                    className="form-control"
                     style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-color)',
-                      background: 'var(--card-background)',
-                      color: 'var(--text-primary)',
-                      outline: 'none',
+                      borderRadius: '10px',
+                      padding: '12px 14px',
                       fontSize: '14px',
-                      cursor: 'pointer',
-                      boxSizing: 'border-box'
+                      cursor: 'pointer'
                     }}
                   >
                     <option value="CIH Bank">CIH Bank</option>
@@ -741,31 +716,30 @@ const CourierDashboard = () => {
                 </div>
 
                 {/* RIB input */}
-                <div style={{ marginBottom: '25px' }}>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px' }}>24-Digit RIB Account Number</label>
+                <div className="form-group" style={{ marginBottom: '24px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
+                    24-Digit RIB Account Number *
+                  </label>
                   <input 
                     type="text"
                     value={ribNumber}
                     onChange={(e) => setRibNumber(e.target.value.replace(/\D/g, '').slice(0, 24))}
-                    placeholder="E.g. 230123456789012345678901"
+                    placeholder="e.g. 230123456789012345678901"
                     required
+                    className="form-control"
                     style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-color)',
-                      background: 'var(--card-background)',
-                      color: 'var(--text-primary)',
-                      outline: 'none',
+                      borderRadius: '10px',
+                      padding: '12px 14px',
                       fontSize: '14px',
                       fontFamily: 'monospace',
-                      letterSpacing: '1px',
-                      boxSizing: 'border-box'
+                      letterSpacing: '1px'
                     }}
                   />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    <span>Must be strictly 24 digits</span>
-                    <span>Entered: {ribNumber.length}/24</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                    <span>Must be strictly 24 Moroccan digits</span>
+                    <span style={{ fontWeight: ribNumber.length === 24 ? '700' : '400', color: ribNumber.length === 24 ? '#10b981' : 'var(--text-secondary)' }}>
+                      Entered: {ribNumber.length}/24
+                    </span>
                   </div>
                 </div>
 
@@ -773,30 +747,21 @@ const CourierDashboard = () => {
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button 
                     type="button" 
-                    className="btn btn-outline" 
+                    className="dashboard-btn-outline" 
                     onClick={handleCloseWithdrawModal}
-                    style={{ flex: 1, padding: '10px 0', borderRadius: '8px', cursor: 'pointer' }}
+                    style={{ flex: 1, padding: '12px 0' }}
                   >
                     Cancel
                   </button>
                   <button 
                     type="submit" 
-                    className="btn" 
+                    className="wallet-withdraw-btn" 
                     disabled={withdrawLoading}
                     style={{
-                      flex: 1,
-                      padding: '10px 0',
-                      borderRadius: '8px',
-                      background: 'linear-gradient(90deg, #4ade80, #10b981)',
-                      color: '#fff',
-                      fontWeight: '600',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
+                      flex: 1.5,
+                      padding: '12px 0',
                       justifyContent: 'center',
-                      gap: '8px',
-                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                      opacity: withdrawLoading ? 0.7 : 1
                     }}
                   >
                     {withdrawLoading ? (
@@ -810,47 +775,47 @@ const CourierDashboard = () => {
                 </div>
               </form>
             ) : (
-              <div style={{ textAlign: 'center', padding: '10px 0' }}>
-                <FaCheckCircle size={55} color="#4ade80" style={{ marginBottom: '15px' }} />
-                <h2 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '8px' }}>Withdrawal Requested!</h2>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+              <div style={{ textAlign: 'center', padding: '12px 0' }}>
+                <FaCheckCircle size={64} style={{ color: '#10b981', marginBottom: '16px', filter: 'drop-shadow(0 6px 16px rgba(16, 185, 129, 0.4))' }} />
+                <h2 style={{ fontSize: '22px', fontWeight: '800', marginBottom: '8px', color: 'var(--text-primary)' }}>Withdrawal Requested!</h2>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '22px', lineHeight: '1.5' }}>
                   Your bank transfer has been queued. Funds are usually credited within 1-2 hours depending on your bank.
                 </p>
 
                 <div style={{
                   background: 'var(--hover-bg)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
-                  padding: '15px',
+                  borderRadius: '14px',
+                  padding: '18px',
                   textAlign: 'left',
-                  fontSize: '12px',
-                  marginBottom: '20px',
+                  fontSize: '13px',
+                  marginBottom: '24px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '8px'
+                  gap: '10px'
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Amount Transferred:</span>
-                    <strong style={{ color: '#10b981' }}>{parseFloat(withdrawAmount).toFixed(2)} MAD</strong>
+                    <strong style={{ color: '#10b981', fontSize: '15px' }}>{parseFloat(withdrawAmount).toFixed(2)} MAD</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Destination:</span>
-                    <strong>{bankName}</strong>
+                    <strong style={{ color: 'var(--text-primary)' }}>{bankName}</strong>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>RIB Number:</span>
-                    <span style={{ fontFamily: 'monospace' }}>***{ribNumber.slice(-6)}</span>
+                    <span style={{ fontFamily: 'monospace', fontWeight: '600' }}>***{ribNumber.slice(-6)}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Reference Number:</span>
-                    <strong style={{ fontFamily: 'monospace' }}>{txnRef}</strong>
+                    <strong style={{ fontFamily: 'monospace', color: '#2563eb' }}>{txnRef}</strong>
                   </div>
                 </div>
 
                 <button 
-                  className="btn btn-primary" 
+                  className="dashboard-btn-primary" 
                   onClick={handleCloseWithdrawModal}
-                  style={{ width: '100%', padding: '10px 0', borderRadius: '8px', cursor: 'pointer' }}
+                  style={{ width: '100%', padding: '12px 0' }}
                 >
                   Done
                 </button>
