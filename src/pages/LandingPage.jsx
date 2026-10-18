@@ -29,12 +29,16 @@ const LandingPage = () => {
   borderRadius: '22px',
   boxShadow: '0 8px 30px rgba(0,0,0,0.16)'
 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <rect width="28" height="28" rx="8" fill="#2563eb"/>
-            <path d="M6 14 L14 6 L22 14 L18 14 L18 22 L10 22 L10 14 Z" fill="white"/>
-          </svg>
-          <span style={{ color: 'white', fontSize: '20px', fontWeight: 700, letterSpacing: '-0.5px' }}>DeliverX</span>
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          title="DeliverX Home"
+        >
+          <img
+            src="/logo-white.png"
+            alt="DeliverX"
+            style={{ height: '36px', width: 'auto', objectFit: 'contain', display: 'block' }}
+          />
         </div>
         <div style={{ display: 'flex', gap: '32px', alignItems: 'center' }}>
           <a href="#features" style={{ textDecoration: 'none', color: 'rgba(255,255,255,0.75)', fontSize: '15px', fontWeight: 500, transition: 'color 0.2s' }}
@@ -398,11 +402,11 @@ const LandingPage = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '60px', marginBottom: '60px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-                  <rect width="28" height="28" rx="8" fill="#2563eb"/>
-                  <path d="M6 14 L14 6 L22 14 L18 14 L18 22 L10 22 L10 14 Z" fill="white"/>
-                </svg>
-                <span style={{ fontSize: '18px', fontWeight: 700 }}>DeliverX</span>
+                <img
+                  src="/logo-white.png"
+                  alt="DeliverX"
+                  style={{ height: '32px', width: 'auto', objectFit: 'contain', display: 'block' }}
+                />
               </div>
               <p style={{ color: '#64748b', fontSize: '14px', lineHeight: 1.7, maxWidth: '240px' }}>
                 {t('fastReliableTitle')}

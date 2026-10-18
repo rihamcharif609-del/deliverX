@@ -206,26 +206,36 @@ const Register = () => {
         </div>
 
         <div style={{ marginBottom: '20px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'rgba(255,255,255,0.78)' }}>
             <input type="checkbox" required disabled={loading} /> I agree to the{' '}
-            <a href="#" style={{ color: 'var(--primary-color)' }}>Terms & Conditions</a>
+            <a href="#" style={{ color: '#93c5fd', textDecoration: 'none' }}>Terms & Conditions</a>
           </label>
         </div>
 
         <button
           type="submit"
           className="btn btn-primary"
-          style={{ width: '100%', marginBottom: '20px' }}
+          style={{
+            width: '100%',
+            marginBottom: '20px',
+            background: '#2563eb',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '14px',
+            padding: '15px 18px',
+            fontWeight: 700,
+            boxShadow: '0 12px 30px rgba(37,99,235,0.35)'
+          }}
           disabled={loading}
         >
           {loading ? <LoadingSpinner inline label="Creating account..." size={16} /> : 'Sign Up'}
         </button>
 
-        <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.72)' }}>
           Already have an account?{' '}
           <a 
             href="#" 
-            style={{ color: 'var(--primary-color)', textDecoration: 'none' }}
+            style={{ color: '#93c5fd', textDecoration: 'none' }}
             onClick={(e) => {
               e.preventDefault();
               if (!loading) {

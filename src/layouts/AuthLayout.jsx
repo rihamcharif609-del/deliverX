@@ -1,8 +1,10 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const AuthLayout = ({ children, title, subtitle }) => {
   return (
-    <div  style={{
+    <div
+      style={{
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
@@ -11,9 +13,9 @@ const AuthLayout = ({ children, title, subtitle }) => {
         position: 'relative',
         overflow: 'hidden',
         background: 'linear-gradient(160deg, #06091a 0%, #0d1b3e 50%, #0a1628 100%)'
-      }}>
-
-         {/* Background image */}
+      }}
+    >
+      {/* Background image */}
       <div
         style={{
           position: 'absolute',
@@ -27,7 +29,8 @@ const AuthLayout = ({ children, title, subtitle }) => {
           opacity: 0.38
         }}
       />
-   {/* Card */}
+
+      {/* Card */}
       <div
         className="card"
         style={{
@@ -45,17 +48,38 @@ const AuthLayout = ({ children, title, subtitle }) => {
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <h1
+          <Link
+            to="/"
+            title="Return to DeliverX Home"
             style={{
-              color: '#ffffff',
-              fontSize: '40px',
-              marginBottom: '10px',
-              fontWeight: 800,
-              letterSpacing: '-1px'
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textDecoration: 'none',
+              marginBottom: '16px',
+              cursor: 'pointer',
+              transition: 'all 0.25s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.opacity = '0.92';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.opacity = '1';
             }}
           >
-            DeliverX
-          </h1>
+            <img
+              src="/logo-white.png"
+              alt="DeliverX"
+              style={{
+                height: '46px',
+                width: 'auto',
+                objectFit: 'contain',
+                display: 'block'
+              }}
+            />
+          </Link>
 
           <h2
             style={{
@@ -71,7 +95,8 @@ const AuthLayout = ({ children, title, subtitle }) => {
           <p
             style={{
               color: 'rgba(255,255,255,0.72)',
-              fontSize: '15px'
+              fontSize: '15px',
+              margin: 0
             }}
           >
             {subtitle}

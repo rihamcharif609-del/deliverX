@@ -62,12 +62,11 @@ const Sidebar = ({ userRole = 'sender' }) => {
     <div className="sidebar">
       <div className="sidebar-header">
         <div className="sidebar-brand">
-          <svg width="32" height="32" viewBox="0 0 28 28" fill="none">
-            <rect width="28" height="28" rx="8" fill="#2563eb"/>
-            <path d="M6 14 L14 6 L22 14 L18 14 L18 22 L10 22 L10 14 Z" fill="white"/>
-          </svg>
+          
           <div className="sidebar-brand-text">
-            <h2>DeliverX</h2>
+            <h2>
+              Deliver<span style={{ color: '#1F5EFF' }}>X</span>
+            </h2>
             <p>{t('deliveryManagement')}</p>
           </div>
         </div>
