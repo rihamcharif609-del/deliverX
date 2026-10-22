@@ -3,6 +3,7 @@ import axios from 'axios';
 import MainLayout from '../layouts/MainLayout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import StatusBadge from '../components/StatusBadge';
+import SuspendUserModal from '../components/SuspendUserModal';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   FaArrowLeft,
@@ -24,7 +25,9 @@ import {
   FaFileAlt,
   FaEye,
   FaTimes,
-  FaExclamationCircle
+  FaExclamationCircle,
+  FaBan,
+  FaSpinner
 } from 'react-icons/fa';
 
 const API_BASE_URL = 'http://localhost:8000/api/v1';
@@ -169,6 +172,43 @@ const UserProfile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [isSuspendModalOpen, setIsSuspendModalOpen] = useState(false);
+  const [suspendLoading, setSuspendLoading] = useState(false);
+  const [unsuspendLoading, setUnsuspendLoading] = useState(false);
+  const [suspendError, setSuspendError] = useState('');
+  const [feedback, setFeedback] = useState(null);
+
+  const handleConfirmSuspend = async ({ duration, reason }) => {
+    setSuspendLoading(true);
+    setSuspendError('');
+    try {
+      const { data } = await axios.post(`${API_BASE_URL}/admin/users/${id}/suspend`, {
+        duration,
+        reason,
+      });
+      setProfile(data.data);
+      setFeedback({ type: 'success', text: data.message || 'User account has been suspended.' });
+      setIsSuspendModalOpen(false);
+    } catch (err) {
+      setSuspendError(err.response?.data?.message || 'Failed to suspend account.');
+    } finally {
+      setSuspendLoading(false);
+    }
+  };
+
+  const handleConfirmUnsuspend = async () => {
+    setUnsuspendLoading(true);
+    try {
+      const { data } = await axios.post(`${API_BASE_URL}/admin/users/${id}/unsuspend`);
+      setProfile(data.data);
+      setFeedback({ type: 'success', text: data.message || 'User account suspension lifted.' });
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to lift suspension.');
+    } finally {
+      setUnsuspendLoading(false);
+    }
+  };
+
   useEffect(() => {
     const fetchUser = async () => {
       setIsLoading(true);
@@ -286,7 +326,7 @@ const UserProfile = () => {
             Comprehensive credentials, performance statistics, verification status, and delivery history.
           </p>
         </div>
-        <div className="hero-banner-actions">
+        <div className="hero-banner-actions" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button
             type="button"
             className="dashboard-btn-outline"
@@ -295,8 +335,131 @@ const UserProfile = () => {
           >
             <FaArrowLeft size={13} /> Back to Users
           </button>
+
+          {!isAdmin && profile.status === 'suspended' && (
+            <button
+              type="button"
+              className="dashboard-btn-outline"
+              onClick={handleConfirmUnsuspend}
+              disabled={unsuspendLoading}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: '#10b981',
+                borderColor: 'rgba(16, 185, 129, 0.4)',
+                backgroundColor: 'rgba(16, 185, 129, 0.08)'
+              }}
+            >
+              {unsuspendLoading ? <FaSpinner className="spin" size={13} /> : <FaCheckCircle size={13} />}
+              Reactivate Account
+            </button>
+          )}
+
+          {!isAdmin && profile.status !== 'suspended' && (
+            <button
+              type="button"
+              className="dashboard-btn-outline"
+              onClick={() => {
+                setSuspendError('');
+                setIsSuspendModalOpen(true);
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: '#ef4444',
+                borderColor: 'rgba(239, 68, 68, 0.4)',
+                backgroundColor: 'rgba(239, 68, 68, 0.08)'
+              }}
+            >
+              <FaBan size={13} /> Suspend Account
+            </button>
+          )}
         </div>
       </div>
+
+      {feedback && (
+        <div style={{
+          padding: '14px 18px',
+          borderRadius: '12px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          background: feedback.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+          border: `1px solid ${feedback.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+          color: feedback.type === 'success' ? '#10b981' : '#ef4444',
+          fontSize: '14px',
+          fontWeight: '600'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {feedback.type === 'success' ? <FaCheckCircle size={16} /> : <FaExclamationCircle size={16} />}
+            <span>{feedback.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFeedback(null)}
+            style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' }}
+          >
+            <FaTimes size={14} />
+          </button>
+        </div>
+      )}
+
+      {profile.status === 'suspended' && (
+        <div style={{
+          padding: '16px 20px',
+          borderRadius: '14px',
+          marginBottom: '24px',
+          background: 'rgba(239, 68, 68, 0.08)',
+          border: '1px solid rgba(239, 68, 68, 0.25)',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '14px'
+        }}>
+          <div style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '10px',
+            background: 'rgba(239, 68, 68, 0.15)',
+            color: '#ef4444',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '18px',
+            flexShrink: 0
+          }}>
+            <FaBan />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <strong style={{ fontSize: '15px', color: '#b91c1c' }}>
+                Account Currently Suspended
+              </strong>
+              <span style={{
+                fontSize: '12px',
+                fontWeight: '700',
+                padding: '3px 10px',
+                borderRadius: '12px',
+                background: 'rgba(239, 68, 68, 0.15)',
+                color: '#ef4444'
+              }}>
+                {profile.suspended_until ? `Until ${formatDate(profile.suspended_until)}` : 'Indefinite Duration'}
+              </span>
+            </div>
+            <p style={{ margin: '6px 0 2px 0', fontSize: '13px', color: '#991b1b', lineHeight: 1.5 }}>
+              <strong>Reason:</strong> {profile.suspension_reason || 'No specific reason provided.'}
+            </p>
+            {profile.suspended_at && (
+              <div style={{ fontSize: '11px', color: '#dc2626', marginTop: '4px' }}>
+                Suspended on {formatDate(profile.suspended_at)}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="form-submit-error-banner" style={{ marginBottom: '20px' }}>
@@ -975,6 +1138,19 @@ const UserProfile = () => {
           </div>
         </div>
       )}
+
+      {/* ===== SUSPEND CONFIRMATION MODAL ===== */}
+      <SuspendUserModal
+        isOpen={isSuspendModalOpen}
+        user={profile}
+        onClose={() => {
+          setIsSuspendModalOpen(false);
+          setSuspendError('');
+        }}
+        onConfirm={handleConfirmSuspend}
+        loading={suspendLoading}
+        error={suspendError}
+      />
     </MainLayout>
   );
 };

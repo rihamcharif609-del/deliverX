@@ -80,6 +80,26 @@ export const AuthProvider = ({ children }) => {
     restoreSession();
   }, [clearAuth, fetchUser]);
 
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (
+          error.response?.status === 403 &&
+          (error.response?.data?.account_suspended ||
+            error.response?.data?.message?.toLowerCase().includes('suspended'))
+        ) {
+          clearAuth();
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, [clearAuth]);
+
   const login = useCallback(async ({ email, password }) => {
     const { data } = await axios.post(`${API_BASE_URL}/auth/login`, {
       email,

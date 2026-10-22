@@ -10,6 +10,9 @@ const StatusBadge = ({ status }) => {
     'in-transit': 'In Transit',
     delivered: 'Delivered',
     cancelled: 'Cancelled',
+    active: 'Active',
+    suspended: 'Suspended',
+    inactive: 'Inactive',
   };
 
   const normalizedStatus = status ? status.toLowerCase() : 'pending';
@@ -17,9 +20,9 @@ const StatusBadge = ({ status }) => {
   return (
     <span className={`status-badge status-${normalizedStatus}`}>
       <span className="status-badge-dot" />
-      {statusMap[status] || status}
+      {statusMap[normalizedStatus] || statusMap[status] || status}
     </span>
   );
 };
 
-export default StatusBadge;
+export default StatusBadge;

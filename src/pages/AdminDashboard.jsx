@@ -49,13 +49,17 @@ const AdminDashboard = ({ setUserRole }) => {
   const dashboardLoading = deliveriesLoading || adminDashboardLoading || withdrawalsLoading;
 
   const [recentUsers, setRecentUsers] = useState([]);
+  const [dashboardData, setDashboardData] = useState(null);
 
   useEffect(() => {
     fetchDeliveries('admin').catch(() => {});
     fetchAdminDashboard()
       .then((res) => {
-        if (res && res.recent_users) {
-          setRecentUsers(res.recent_users);
+        if (res) {
+          setDashboardData(res);
+          if (res.recent_users) {
+            setRecentUsers(res.recent_users);
+          }
         }
       })
       .catch(() => {});
@@ -552,16 +556,53 @@ const AdminDashboard = ({ setUserRole }) => {
                   <p className="admin-card-subtitle">Newly registered senders, couriers, and administrators</p>
                 </div>
               </div>
-              <button 
-                type="button" 
-                className="dashboard-btn-outline btn-sm" 
-                onClick={() => navigate('/admin/users')}
-                style={{ width: 'auto' }}
-              >
-                View All <FaArrowRight size={10} />
-              </button>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                {dashboardData && (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      background: 'rgba(16, 185, 129, 0.12)',
+                      color: '#10b981',
+                      border: '1px solid rgba(16, 185, 129, 0.25)',
+                    }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+                      {dashboardData.active_users ?? 0} Active
+                    </span>
+
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '4px 12px',
+                      borderRadius: '20px',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      background: 'rgba(239, 68, 68, 0.12)',
+                      color: '#ef4444',
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                    }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#ef4444' }} />
+                      {dashboardData.suspended_users ?? 0} Suspended
+                    </span>
+                  </div>
+                )}
+                <button 
+                  type="button" 
+                  className="dashboard-btn-outline btn-sm" 
+                  onClick={() => navigate('/admin/users')}
+                  style={{ width: 'auto' }}
+                >
+                  View All <FaArrowRight size={10} />
+                </button>
+              </div>
             </div>
-            <UserTable users={recentUsers.slice(0, 3)} showActions={false}/>
+            <UserTable users={recentUsers.slice(0, 5)} showActions={false}/>
           </div>
         </div>
 
