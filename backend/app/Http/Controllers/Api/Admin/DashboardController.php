@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Enums\UserRole;
 use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Controller;
+use App\Models\Announcement;
 use App\Models\Delivery;
 use App\Models\Payment;
 use App\Models\User;
@@ -49,6 +50,11 @@ class DashboardController extends Controller
                 'refunds_issued' => (float) Delivery::where('payment_status', 'refunded')->sum('amount'),
                 'ratings' => RatingController::adminRatingSummary(),
                 'monthly_revenue' => $monthlyRevenue,
+                'announcements' => [
+                    'total' => Announcement::count(),
+                    'published' => Announcement::where('is_published', true)->count(),
+                    'draft' => Announcement::where('is_published', false)->count(),
+                ],
                 'recent_users' => User::query()
                     ->whereIn('role', [UserRole::Sender->value, UserRole::Courier->value])
                     ->withCount(['sentDeliveries', 'courierDeliveries'])

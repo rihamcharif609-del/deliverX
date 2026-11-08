@@ -1,4 +1,4 @@
-import { FaBell, FaChevronDown, FaUser, FaCog, FaSignOutAlt, FaTimes, FaCheck, FaTruck, FaUserPlus, FaTrash } from 'react-icons/fa';
+import { FaBell, FaChevronDown, FaUser, FaCog, FaSignOutAlt, FaTimes, FaCheck, FaTruck, FaUserPlus, FaTrash, FaBullhorn } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import SettingsPanel from './SettingsPanel';
 import React, { useState, useEffect } from 'react';
@@ -155,6 +155,8 @@ const Header = ({userRole = 'sender', darkMode, setDarkMode }) => {
       case 'courier_notify_paid':
       case 'courier_notify_refunded':
         return <FaCheck />;
+      case 'announcement':
+        return <FaBullhorn />;
       default:
         return <FaBell />;
     }
@@ -237,6 +239,33 @@ const Header = ({userRole = 'sender', darkMode, setDarkMode }) => {
                   ))
                 )}
               </div>
+              <div style={{
+                padding: '10px 14px',
+                borderTop: '1px solid var(--border-color)',
+                textAlign: 'center',
+                background: 'var(--hover-bg, #f8fafc)'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNotifications(false);
+                    navigate(userRole === 'courier' ? '/courier/announcements' : (userRole === 'admin' ? '/admin' : '/sender/announcements'));
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--primary-color, #2563eb)',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <FaBullhorn size={12} /> View Platform Announcements
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -262,7 +291,7 @@ const Header = ({userRole = 'sender', darkMode, setDarkMode }) => {
                         }}
                       />
                     ) : (
-                      user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                      roleAvatar
                     )}</div>
             <FaChevronDown />
           </button>

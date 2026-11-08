@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\AnnouncementRead;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -69,6 +70,19 @@ class NotificationController extends Controller
 
         $notification->update(['is_read' => true]);
 
+        $announcementId = $notification->data['announcement_id'] ?? null;
+        if ($announcementId) {
+            AnnouncementRead::firstOrCreate(
+                [
+                    'announcement_id' => $announcementId,
+                    'user_id' => $request->user()->id,
+                ],
+                [
+                    'read_at' => now(),
+                ]
+            );
+        }
+
         return response()->json([
             'data' => $this->format($notification->refresh()),
         ]);
@@ -76,7 +90,29 @@ class NotificationController extends Controller
 
     public function markAllRead(Request $request): JsonResponse
     {
-        Notification::where('user_id', $request->user()->id)
+        $userId = $request->user()->id;
+
+        $unreadAnnouncementIds = Notification::where('user_id', $userId)
+            ->where('is_read', false)
+            ->whereNotNull('data->announcement_id')
+            ->pluck('data')
+            ->map(fn ($data) => $data['announcement_id'] ?? null)
+            ->filter()
+            ->unique();
+
+        foreach ($unreadAnnouncementIds as $announcementId) {
+            AnnouncementRead::firstOrCreate(
+                [
+                    'announcement_id' => $announcementId,
+                    'user_id' => $userId,
+                ],
+                [
+                    'read_at' => now(),
+                ]
+            );
+        }
+
+        Notification::where('user_id', $userId)
             ->where('is_read', false)
             ->update(['is_read' => true]);
 

@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { useDelivery } from '../context/DeliveryContext';
 import MainLayout from '../layouts/MainLayout';
@@ -6,6 +7,8 @@ import StatCard from '../components/StatCard';
 import ChartPlaceholder from '../components/ChartPlaceholder';
 import DeliveryTable from '../components/DeliveryTable';
 import UserTable from '../components/UserTable';
+import AnnouncementModal from '../components/AnnouncementModal';
+import { AnnouncementTypeBadge, AnnouncementStatusBadge } from '../components/AnnouncementBadge';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -23,7 +26,11 @@ import {
   FaStar,
   FaBoxes,
   FaUsers,
-  FaArrowRight
+  FaArrowRight,
+  FaBullhorn,
+  FaPlus,
+  FaEdit,
+  FaTrash
 } from 'react-icons/fa';
 import LoadingSpinner, { SectionLoading } from '../components/LoadingSpinner';
 
@@ -50,6 +57,173 @@ const AdminDashboard = ({ setUserRole }) => {
 
   const [recentUsers, setRecentUsers] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
+
+  // Announcements State
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementsCounts, setAnnouncementsCounts] = useState({
+    total: 0,
+    published: 0,
+    draft: 0,
+    info: 0,
+    warning: 0,
+    important: 0,
+    maintenance: 0,
+    target_users_count: 0,
+  });
+  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
+  const [announcementSearch, setAnnouncementSearch] = useState('');
+  const [announcementStatusFilter, setAnnouncementStatusFilter] = useState('all');
+  const [announcementTypeFilter, setAnnouncementTypeFilter] = useState('all');
+
+  // Announcement Modals & Action States
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [currentAnnouncement, setCurrentAnnouncement] = useState(null);
+  const [announcementModalLoading, setAnnouncementModalLoading] = useState(false);
+  const [announcementModalError, setAnnouncementModalError] = useState('');
+
+  const [deletingAnnouncement, setDeletingAnnouncement] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const [publishingAnnouncement, setPublishingAnnouncement] = useState(null);
+  const [publishLoading, setPublishLoading] = useState(false);
+
+  const [announcementToast, setAnnouncementToast] = useState(null);
+
+  const fetchAdminAnnouncements = async () => {
+    setAnnouncementsLoading(true);
+    try {
+      const { data } = await axios.get('http://localhost:8000/api/v1/admin/announcements');
+      setAnnouncements(Array.isArray(data.data) ? data.data : []);
+      if (data.counts) {
+        setAnnouncementsCounts(data.counts);
+      }
+    } catch (err) {
+      console.warn('Could not load announcements', err);
+    } finally {
+      setAnnouncementsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdminAnnouncements();
+  }, []);
+
+  useEffect(() => {
+    if (announcementToast) {
+      const timer = setTimeout(() => setAnnouncementToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [announcementToast]);
+
+  const handleOpenCreateAnnouncement = () => {
+    setCurrentAnnouncement(null);
+    setAnnouncementModalError('');
+    setShowAnnouncementModal(true);
+  };
+
+  const handleOpenEditAnnouncement = (item) => {
+    setCurrentAnnouncement(item);
+    setAnnouncementModalError('');
+    setShowAnnouncementModal(true);
+  };
+
+  const handleSaveAnnouncement = async (formData) => {
+    setAnnouncementModalLoading(true);
+    setAnnouncementModalError('');
+
+    try {
+      if (formData.id) {
+        await axios.patch(`http://localhost:8000/api/v1/admin/announcements/${formData.id}`, {
+          title: formData.title,
+          message: formData.message,
+          type: formData.type,
+          publish: formData.publish,
+        });
+        setAnnouncementToast({
+          type: 'success',
+          message: 'Announcement updated successfully.',
+        });
+      } else {
+        await axios.post('http://localhost:8000/api/v1/admin/announcements', {
+          title: formData.title,
+          message: formData.message,
+          type: formData.type,
+          publish: formData.publish,
+        });
+        setAnnouncementToast({
+          type: 'success',
+          message: formData.publish 
+            ? 'Announcement published and sent to all users.'
+            : 'Announcement saved as draft.',
+        });
+      }
+
+      setShowAnnouncementModal(false);
+      setCurrentAnnouncement(null);
+      await fetchAdminAnnouncements();
+    } catch (err) {
+      setAnnouncementModalError(
+        err.response?.data?.message || 
+        err.response?.data?.errors?.title?.[0] || 
+        err.response?.data?.errors?.message?.[0] || 
+        'Failed to save announcement.'
+      );
+    } finally {
+      setAnnouncementModalLoading(false);
+    }
+  };
+
+  const handlePublishAnnouncement = async (item) => {
+    setPublishLoading(true);
+    try {
+      await axios.post(`http://localhost:8000/api/v1/admin/announcements/${item.id}/publish`);
+      setAnnouncementToast({
+        type: 'success',
+        message: `Announcement "${item.title}" published and broadcasted!`,
+      });
+      setPublishingAnnouncement(null);
+      await fetchAdminAnnouncements();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to publish announcement.');
+    } finally {
+      setPublishLoading(false);
+    }
+  };
+
+  const handleDeleteAnnouncement = async () => {
+    if (!deletingAnnouncement) return;
+    setDeleteLoading(true);
+    try {
+      await axios.delete(`http://localhost:8000/api/v1/admin/announcements/${deletingAnnouncement.id}`);
+      setAnnouncementToast({
+        type: 'success',
+        message: 'Announcement deleted successfully.',
+      });
+      setDeletingAnnouncement(null);
+      await fetchAdminAnnouncements();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete announcement.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const filteredAdminAnnouncements = useMemo(() => {
+    return announcements.filter((a) => {
+      const matchesSearch =
+        a.title.toLowerCase().includes(announcementSearch.toLowerCase()) ||
+        a.message.toLowerCase().includes(announcementSearch.toLowerCase());
+
+      let matchesStatus = true;
+      if (announcementStatusFilter === 'published') matchesStatus = a.is_published;
+      else if (announcementStatusFilter === 'draft') matchesStatus = !a.is_published;
+
+      const matchesType =
+        announcementTypeFilter === 'all' || a.type === announcementTypeFilter;
+
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [announcements, announcementSearch, announcementStatusFilter, announcementTypeFilter]);
 
   useEffect(() => {
     fetchDeliveries('admin').catch(() => {});
@@ -346,7 +520,7 @@ const AdminDashboard = ({ setUserRole }) => {
                         {courier.name}
                       </h4>
                       <p style={{ margin: '3px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                        {courier.vehicle} • {courier.completedCount || 0} deliveries
+                        {courier.vehicle} • {courier.completedCount || 0} {(courier.completedCount || 0) === 1 ? 'delivery' : 'deliveries'}
                       </p>
                     </div>
                   </div>
@@ -354,7 +528,7 @@ const AdminDashboard = ({ setUserRole }) => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '12px' }}>
                     <span style={{ color: '#facc15', fontSize: '15px' }}>★</span>
                     <strong style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{courier.averageRating.toFixed(1)}</strong>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>({courier.reviewsCount || 0} reviews)</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>({courier.reviewsCount || 0} {(courier.reviewsCount || 0) === 1 ? 'review' : 'reviews'})</span>
                   </div>
 
                   {recentComment && (
@@ -606,6 +780,371 @@ const AdminDashboard = ({ setUserRole }) => {
           </div>
         </div>
 
+        {/* GLOBAL PLATFORM ANNOUNCEMENTS SECTION */}
+        <div className="form-section-card" style={{ marginBottom: '28px' }}>
+          <div className="admin-card-header">
+            <div className="admin-card-header-left">
+              <div className="form-card-icon-badge pickup" style={{ background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb' }}>
+                <FaBullhorn />
+              </div>
+              <div>
+                <h3 className="admin-card-title">Global Platform Announcements</h3>
+                <p className="admin-card-subtitle">
+                  Create, edit, publish, and broadcast system-wide notices to all senders and couriers
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="dashboard-btn-primary btn-sm"
+                onClick={handleOpenCreateAnnouncement}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  borderRadius: '10px'
+                }}
+              >
+                <FaPlus size={11} /> New Announcement
+              </button>
+            </div>
+          </div>
+
+          {/* Metric count pills */}
+          <div style={{
+            display: 'flex',
+            gap: '10px',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            marginBottom: '18px',
+            paddingBottom: '16px',
+            borderBottom: '1px solid var(--border-color)'
+          }}>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '700',
+              background: 'var(--hover-bg, #f8fafc)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-color)',
+            }}>
+              <strong>{announcementsCounts.total || 0}</strong> Total
+            </span>
+
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '700',
+              background: 'rgba(16, 185, 129, 0.12)',
+              color: '#10b981',
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+            }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981' }} />
+              <strong>{announcementsCounts.published || 0}</strong> Published
+            </span>
+
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '700',
+              background: 'rgba(100, 116, 139, 0.12)',
+              color: '#64748b',
+              border: '1px solid rgba(100, 116, 139, 0.25)',
+            }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#64748b' }} />
+              <strong>{announcementsCounts.draft || 0}</strong> Drafts
+            </span>
+
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '700',
+              background: 'rgba(37, 99, 235, 0.1)',
+              color: '#2563eb',
+              border: '1px solid rgba(37, 99, 235, 0.25)',
+            }}>
+              Info: <strong>{announcementsCounts.info || 0}</strong>
+            </span>
+
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '700',
+              background: 'rgba(245, 158, 11, 0.1)',
+              color: '#d97706',
+              border: '1px solid rgba(245, 158, 11, 0.25)',
+            }}>
+              Warning: <strong>{announcementsCounts.warning || 0}</strong>
+            </span>
+
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '700',
+              background: 'rgba(239, 68, 68, 0.1)',
+              color: '#ef4444',
+              border: '1px solid rgba(239, 68, 68, 0.25)',
+            }}>
+              Important: <strong>{announcementsCounts.important || 0}</strong>
+            </span>
+
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: '700',
+              background: 'rgba(139, 92, 246, 0.1)',
+              color: '#8b5cf6',
+              border: '1px solid rgba(139, 92, 246, 0.25)',
+            }}>
+              Maintenance: <strong>{announcementsCounts.maintenance || 0}</strong>
+            </span>
+          </div>
+
+          {/* Toast feedback */}
+          {announcementToast && (
+            <div style={{
+              marginBottom: '16px',
+              padding: '12px 16px',
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              background: announcementToast.type === 'success' ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+              border: `1px solid ${announcementToast.type === 'success' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+              color: announcementToast.type === 'success' ? '#10b981' : '#ef4444',
+              fontSize: '13px',
+              fontWeight: '600'
+            }}>
+              <FaCheckCircle size={15} />
+              <span>{announcementToast.message}</span>
+            </div>
+          )}
+
+          {/* Search & Filter Toolbar */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '12px',
+            marginBottom: '16px',
+            flexWrap: 'wrap'
+          }}>
+            <div className="admin-table-search" style={{ flex: '1 1 240px', maxWidth: '380px' }}>
+              <FaSearch size={13} color="var(--text-secondary)" />
+              <input
+                type="text"
+                placeholder="Search announcements by title or content..."
+                value={announcementSearch}
+                onChange={(e) => setAnnouncementSearch(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <select
+                className="admin-table-select"
+                value={announcementStatusFilter}
+                onChange={(e) => setAnnouncementStatusFilter(e.target.value)}
+              >
+                <option value="all">All Statuses</option>
+                <option value="published">Published</option>
+                <option value="draft">Drafts</option>
+              </select>
+
+              <select
+                className="admin-table-select"
+                value={announcementTypeFilter}
+                onChange={(e) => setAnnouncementTypeFilter(e.target.value)}
+              >
+                <option value="all">All Types</option>
+                <option value="info">Info</option>
+                <option value="warning">Warning</option>
+                <option value="important">Important</option>
+                <option value="maintenance">Maintenance</option>
+              </select>
+
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                Showing <strong>{filteredAdminAnnouncements.length}</strong> of {announcements.length}
+              </span>
+            </div>
+          </div>
+
+          {/* Announcements Table */}
+          <div className="table-container dashboard-table-card">
+            <table className="dashboard-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '32%' }}>Title & Notice</th>
+                  <th style={{ width: '13%' }}>Type</th>
+                  <th style={{ width: '12%' }}>Status</th>
+                  <th style={{ width: '14%' }}>Date</th>
+                  <th style={{ width: '13%', textAlign: 'center' }}>User Reach</th>
+                  <th style={{ width: '16%', textAlign: 'center' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {announcementsLoading ? (
+                  <tr>
+                    <td colSpan="6" style={{ padding: '36px', textAlign: 'center' }}>
+                      <LoadingSpinner centered label="Loading announcements..." size={22} />
+                    </td>
+                  </tr>
+                ) : filteredAdminAnnouncements.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                      No announcements found matching the filter criteria.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredAdminAnnouncements.map((item) => (
+                    <tr key={item.id} className="table-row-hover">
+                      {/* Title & Preview */}
+                      <td>
+                        <div style={{ fontWeight: '700', color: 'var(--text-primary)', fontSize: '14px', marginBottom: '3px' }}>
+                          {item.title}
+                        </div>
+                        <div style={{
+                          fontSize: '12px',
+                          color: 'var(--text-secondary)',
+                          lineHeight: 1.4,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}>
+                          {item.message}
+                        </div>
+                      </td>
+
+                      {/* Type Badge */}
+                      <td>
+                        <AnnouncementTypeBadge type={item.type} size="sm" />
+                      </td>
+
+                      {/* Status Badge */}
+                      <td>
+                        <AnnouncementStatusBadge isPublished={item.is_published} size="sm" />
+                      </td>
+
+                      {/* Date */}
+                      <td style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                        <div>{item.published_at ? new Date(item.published_at).toLocaleDateString() : new Date(item.created_at).toLocaleDateString()}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.8 }}>
+                          {item.is_published ? 'Published' : 'Drafted'}
+                        </div>
+                      </td>
+
+                      {/* Read count / Reach */}
+                      <td style={{ textAlign: 'center' }}>
+                        {item.is_published ? (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            color: '#2563eb',
+                            background: 'rgba(37, 99, 235, 0.08)',
+                            padding: '3px 10px',
+                            borderRadius: '12px'
+                          }}>
+                            {item.read_count} / {item.target_users_count} read
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                            Not broadcasted
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
+                          {!item.is_published && (
+                            <button
+                              type="button"
+                              className="dashboard-btn-outline btn-sm"
+                              onClick={() => setPublishingAnnouncement(item)}
+                              style={{
+                                padding: '4px 8px',
+                                fontSize: '11px',
+                                color: '#10b981',
+                                borderColor: 'rgba(16, 185, 129, 0.4)',
+                                backgroundColor: 'rgba(16, 185, 129, 0.08)'
+                              }}
+                              title="Publish announcement now"
+                            >
+                              <FaBullhorn size={10} /> Publish
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            className="dashboard-btn-outline btn-sm"
+                            onClick={() => handleOpenEditAnnouncement(item)}
+                            style={{ padding: '4px 8px', fontSize: '11px' }}
+                            title="Edit announcement"
+                          >
+                            <FaEdit size={11} /> Edit
+                          </button>
+
+                          <button
+                            type="button"
+                            className="dashboard-btn-outline btn-sm"
+                            onClick={() => setDeletingAnnouncement(item)}
+                            style={{
+                              padding: '4px 8px',
+                              fontSize: '11px',
+                              color: '#ef4444',
+                              borderColor: 'rgba(239, 68, 68, 0.35)',
+                              backgroundColor: 'rgba(239, 68, 68, 0.06)'
+                            }}
+                            title="Delete announcement"
+                          >
+                            <FaTrash size={10} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* RATING & QUALITY MONITOR */}
         <div className="dashboard-grid grid-5" style={{ marginBottom: '30px', gap: '24px' }}>
           <div className="form-section-card">
@@ -636,7 +1175,7 @@ const AdminDashboard = ({ setUserRole }) => {
                       #{index + 1} {courier.name}
                     </h4>
                     <p style={{ margin: '3px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>
-                      {courier.reviewsCount} reviews • {courier.vehicle || 'Courier'}
+                      {courier.reviewsCount} {courier.reviewsCount === 1 ? 'review' : 'reviews'} • {courier.vehicle || 'Courier'}
                     </p>
                   </div>
                   <strong style={{ color: '#ef4444', fontSize: '14px', background: 'rgba(239, 68, 68, 0.1)', padding: '4px 10px', borderRadius: '8px' }}>
@@ -854,6 +1393,230 @@ const AdminDashboard = ({ setUserRole }) => {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ANNOUNCEMENT CREATE / EDIT MODAL */}
+      <AnnouncementModal
+        isOpen={showAnnouncementModal}
+        announcement={currentAnnouncement}
+        onClose={() => {
+          setShowAnnouncementModal(false);
+          setCurrentAnnouncement(null);
+          setAnnouncementModalError('');
+        }}
+        onSubmit={handleSaveAnnouncement}
+        loading={announcementModalLoading}
+        error={announcementModalError}
+      />
+
+      {/* QUICK PUBLISH CONFIRMATION MODAL */}
+      {publishingAnnouncement && (
+        <div className="courier-modal-backdrop" onClick={() => !publishLoading && setPublishingAnnouncement(null)}>
+          <div className="courier-modal-card" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setPublishingAnnouncement(null)}
+              disabled={publishLoading}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                border: 'none',
+                background: 'transparent',
+                cursor: publishLoading ? 'not-allowed' : 'pointer',
+                color: 'var(--text-secondary)',
+                padding: '4px',
+              }}
+            >
+              <FaTimes size={16} />
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+              <div style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '10px',
+                background: 'rgba(16, 185, 129, 0.12)',
+                color: '#10b981',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '18px',
+              }}>
+                <FaBullhorn />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)' }}>
+                  Publish Announcement
+                </h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  Broadcast to all registered senders and couriers
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'var(--hover-bg, #f8fafc)',
+              border: '1px solid var(--border-color, #e2e8f0)',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '20px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <AnnouncementTypeBadge type={publishingAnnouncement.type} size="sm" />
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Status: Draft</span>
+              </div>
+              <strong style={{ fontSize: '14px', color: 'var(--text-primary)', display: 'block', marginBottom: '4px' }}>
+                {publishingAnnouncement.title}
+              </strong>
+              <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                {publishingAnnouncement.message}
+              </p>
+            </div>
+
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '24px' }}>
+              Publishing this announcement will immediately deliver an unread notification to all registered senders and couriers across DeliverX.
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="dashboard-btn-outline"
+                onClick={() => setPublishingAnnouncement(null)}
+                disabled={publishLoading}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="dashboard-btn-primary"
+                onClick={() => handlePublishAnnouncement(publishingAnnouncement)}
+                disabled={publishLoading}
+                style={{
+                  background: '#10b981',
+                  borderColor: '#10b981',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                {publishLoading ? (
+                  <>
+                    <FaSpinner className="spin" size={13} /> Publishing...
+                  </>
+                ) : (
+                  <>
+                    <FaBullhorn size={13} /> Confirm & Publish
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deletingAnnouncement && (
+        <div className="courier-modal-backdrop" onClick={() => !deleteLoading && setDeletingAnnouncement(null)}>
+          <div className="courier-modal-card" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setDeletingAnnouncement(null)}
+              disabled={deleteLoading}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                border: 'none',
+                background: 'transparent',
+                cursor: deleteLoading ? 'not-allowed' : 'pointer',
+                color: 'var(--text-secondary)',
+                padding: '4px',
+              }}
+            >
+              <FaTimes size={16} />
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+              <div style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '10px',
+                background: 'rgba(239, 68, 68, 0.1)',
+                color: '#ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '18px',
+              }}>
+                <FaTrash />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)' }}>
+                  Delete Announcement
+                </h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  Permanently remove this notice from the platform
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              background: 'var(--hover-bg, #f8fafc)',
+              border: '1px solid var(--border-color, #e2e8f0)',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '20px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <AnnouncementTypeBadge type={deletingAnnouncement.type} size="sm" />
+                <AnnouncementStatusBadge isPublished={deletingAnnouncement.is_published} size="sm" />
+              </div>
+              <strong style={{ fontSize: '14px', color: 'var(--text-primary)', display: 'block' }}>
+                {deletingAnnouncement.title}
+              </strong>
+            </div>
+
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '24px' }}>
+              Are you sure you want to permanently delete this announcement? Any user notifications generated for this announcement will also be removed. This action cannot be undone.
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="dashboard-btn-outline"
+                onClick={() => setDeletingAnnouncement(null)}
+                disabled={deleteLoading}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="dashboard-btn-danger"
+                onClick={handleDeleteAnnouncement}
+                disabled={deleteLoading}
+                style={{
+                  background: '#ef4444',
+                  borderColor: '#ef4444',
+                  color: 'white',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                {deleteLoading ? (
+                  <>
+                    <FaSpinner className="spin" size={13} /> Deleting...
+                  </>
+                ) : (
+                  <>
+                    <FaTrash size={12} /> Confirm Delete
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

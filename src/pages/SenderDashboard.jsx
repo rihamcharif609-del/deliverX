@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import MainLayout from '../layouts/MainLayout';
 import StatCard from '../components/StatCard';
@@ -8,16 +9,24 @@ import SenderDeliveryTable from '../components/SenderDeliveryTable';
 import { useDelivery } from '../context/DeliveryContext';
 import { useAuth } from '../context/AuthContext';
 import { SectionLoading } from '../components/LoadingSpinner';
-import { FaPlus, FaSearchLocation, FaBoxes, FaArrowRight, FaBox, FaShieldAlt } from 'react-icons/fa';
+import { FaPlus, FaSearchLocation, FaBoxes, FaArrowRight, FaBox, FaShieldAlt, FaBullhorn, FaTimes } from 'react-icons/fa';
 
 const SenderDashboard = ({ navigateTo }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { deliveries, deliveriesLoading, fetchDeliveries } = useDelivery();
   const navigate = useNavigate();
+  const [activeAnnouncement, setActiveAnnouncement] = useState(null);
 
   useEffect(() => {
     fetchDeliveries('sender').catch(() => {});
+    axios.get('http://localhost:8000/api/v1/announcements')
+      .then((res) => {
+        if (res.data?.summary?.latest_unread) {
+          setActiveAnnouncement(res.data.summary.latest_unread);
+        }
+      })
+      .catch(() => {});
   }, [fetchDeliveries]);
 
   const activeDeliveries = deliveries.filter((delivery) =>
@@ -72,6 +81,78 @@ const SenderDashboard = ({ navigateTo }) => {
           </button>
         </div>
       </div>
+
+      {/* ===== ACTIVE GLOBAL ANNOUNCEMENT BANNER ===== */}
+      {activeAnnouncement && (
+        <div style={{
+          marginBottom: '24px',
+          padding: '14px 18px',
+          borderRadius: '14px',
+          background: 
+            activeAnnouncement.type === 'warning' ? 'rgba(245, 158, 11, 0.1)' :
+            activeAnnouncement.type === 'important' ? 'rgba(239, 68, 68, 0.1)' :
+            activeAnnouncement.type === 'maintenance' ? 'rgba(139, 92, 246, 0.1)' : 'rgba(37, 99, 235, 0.1)',
+          border: `1px solid ${
+            activeAnnouncement.type === 'warning' ? 'rgba(245, 158, 11, 0.3)' :
+            activeAnnouncement.type === 'important' ? 'rgba(239, 68, 68, 0.3)' :
+            activeAnnouncement.type === 'maintenance' ? 'rgba(139, 92, 246, 0.3)' : 'rgba(37, 99, 235, 0.3)'
+          }`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '14px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <FaBullhorn color={
+              activeAnnouncement.type === 'warning' ? '#f59e0b' :
+              activeAnnouncement.type === 'important' ? '#ef4444' :
+              activeAnnouncement.type === 'maintenance' ? '#8b5cf6' : '#2563eb'
+            } size={18} />
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
+                  {activeAnnouncement.title}
+                </strong>
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: '800',
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  textTransform: 'uppercase',
+                  background: 'var(--card-background)',
+                  color: 'var(--text-primary)',
+                  border: '1px solid var(--border-color)'
+                }}>
+                  {activeAnnouncement.type_label}
+                </span>
+              </div>
+              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                {activeAnnouncement.message}
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              type="button"
+              className="dashboard-btn-outline btn-sm"
+              onClick={() => navigate('/sender/announcements')}
+              style={{ padding: '6px 12px', fontSize: '12px' }}
+            >
+              View All Notices
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveAnnouncement(null)}
+              style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px' }}
+              title="Dismiss banner"
+            >
+              <FaTimes size={13} />
+            </button>
+          </div>
+        </div>
+      )}
 
       <SectionLoading loading={deliveriesLoading} label="Loading dashboard...">
         {/* ===== STATS GRID (ALWAYS HORIZONTAL ROW) ===== */}

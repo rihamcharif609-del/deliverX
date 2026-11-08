@@ -199,7 +199,7 @@ const CourierDashboard = ({ navigateTo }) => {
     { title: 'Completed Today', value: completedTodayCount.toString(), change: '+2 today', icon: 'OK', trend: 'positive' },
     { title: "Today's Earnings", value: `${earningsToday.toFixed(0)} MAD`, change: earningsToday > 0 ? `+${earningsToday} MAD` : '0 MAD', icon: 'MAD', trend: 'positive' },
     { title: 'Active Deliveries', value: activeDeliveries.length.toString(), change: activeDeliveries.length > 0 ? 'In progress' : 'Idle', icon: 'TR', trend: activeDeliveries.length > 0 ? 'positive' : 'negative' },
-    { title: 'Courier Rating', value: String(myCourierInfo.rating.toFixed(1)), change: `${myCourierInfo.ratingsCount} reviews`, icon: 'DX', trend: 'positive' },
+    { title: 'Courier Rating', value: String(myCourierInfo.rating.toFixed(1)), change: `${myCourierInfo.ratingsCount} ${myCourierInfo.ratingsCount === 1 ? 'review' : 'reviews'}`, icon: 'DX', trend: 'positive' },
   ];
 
   const handleAcceptNearby = async (id) => {

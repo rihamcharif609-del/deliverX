@@ -9,7 +9,8 @@ import {
   FaSearchLocation, 
   FaUserCheck, 
   FaUsers, 
-  FaTruck 
+  FaTruck,
+  FaBullhorn
 } from 'react-icons/fa';
 
 const Sidebar = ({ userRole = 'sender' }) => {
@@ -25,11 +26,13 @@ const Sidebar = ({ userRole = 'sender' }) => {
       { label: 'My Deliveries', page: '/sender/deliveries', icon: <FaBox /> },
       { label: 'Create Delivery', page: '/sender/create', icon: <FaPlusCircle /> },
       { label: 'Track Package', page: '/sender/tracking', icon: <FaSearchLocation /> },
+      { label: 'Announcements', page: '/sender/announcements', icon: <FaBullhorn /> },
     ],
     courier: [
       { label: 'Dashboard', page: '/courier', icon: <FaThLarge /> },
       { label: 'Available', page: '/courier/available', icon: <FaTruck /> },
       { label: 'My Deliveries', page: '/courier/deliveries', icon: <FaBox /> },
+      { label: 'Announcements', page: '/courier/announcements', icon: <FaBullhorn /> },
     ],
   };
 
@@ -129,4 +132,3 @@ const Sidebar = ({ userRole = 'sender' }) => {
 };
 
 export default Sidebar;
-

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
+use App\Models\Announcement;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -48,6 +49,27 @@ class AuthController extends Controller
                 ],
             ]);
         });
+
+        if ($role === UserRole::Sender || $role === UserRole::Courier) {
+            Announcement::where('is_published', true)->get()->each(function (Announcement $announcement) use ($user) {
+                $path = $user->role === UserRole::Courier ? '/courier/announcements' : '/sender/announcements';
+                Notification::create([
+                    'user_id' => $user->id,
+                    'title' => $announcement->title,
+                    'message' => $announcement->message,
+                    'type' => 'announcement',
+                    'path' => $path,
+                    'data' => [
+                        'announcement_id' => $announcement->id,
+                        'type' => $announcement->type->value,
+                        'title' => $announcement->title,
+                        'message' => $announcement->message,
+                        'published_at' => $announcement->published_at?->toIso8601String(),
+                    ],
+                    'is_read' => false,
+                ]);
+            });
+        }
 
         $token = $user->createToken($request->input('device_name', 'deliverx-web'))->plainTextToken;
 

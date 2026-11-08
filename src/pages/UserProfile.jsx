@@ -1000,7 +1000,7 @@ const UserProfile = () => {
             padding: '4px 12px',
             borderRadius: '12px'
           }}>
-            {recentDeliveries.length} Deliveries
+            {recentDeliveries.length} {recentDeliveries.length === 1 ? 'Delivery' : 'Deliveries'}
           </div>
         </div>
 

@@ -19,6 +19,7 @@ import CourierProfile from './pages/CourierProfile';
 import UserProfile from './pages/UserProfile';
 import VerificationPending from './pages/VerificationPending';
 import AdminCourierVerification from './pages/AdminCourierVerification';
+import AnnouncementHistory from './pages/AnnouncementHistory';
 import { DeliveryProvider } from './context/DeliveryContext';
 import { CourierVerificationProvider, useCourierVerification } from './context/CourierVerificationContext';
 import { useAuth } from './context/AuthContext';
@@ -95,6 +96,7 @@ function AppRoutes() {
       <Route path="/sender/tracking" element={<RequireAuth allowedRoles={['sender']}><Tracking /></RequireAuth>} />
       <Route path="/sender/tracking/:id" element={<RequireAuth allowedRoles={['sender']}><Tracking /></RequireAuth>} />
       <Route path="/sender/profile" element={<RequireAuth allowedRoles={['sender']}><SenderProfile /></RequireAuth>} />
+      <Route path="/sender/announcements" element={<RequireAuth allowedRoles={['sender']}><AnnouncementHistory userRole="sender" /></RequireAuth>} />
 
       {/* COURIER */}
       <Route path="/courier" element={<RequireAuth allowedRoles={['courier']}><CourierDashboard /></RequireAuth>} />
@@ -107,6 +109,7 @@ function AppRoutes() {
         element={<RequireAuth allowedRoles={['courier']}>{isCourierVerified ? <CourierDeliveries userRole={userRole} setUserRole={setUserRole} /> : <VerificationPending />}</RequireAuth>}
       />
       <Route path="/courier/profile" element={<RequireAuth allowedRoles={['courier']}><CourierProfile /></RequireAuth>} />
+      <Route path="/courier/announcements" element={<RequireAuth allowedRoles={['courier']}><AnnouncementHistory userRole="courier" /></RequireAuth>} />
     </Routes>
   );
 }

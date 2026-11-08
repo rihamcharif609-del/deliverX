@@ -179,7 +179,7 @@ const AdminDeliveries = ({ setUserRole, userRole }) => {
       {/* ===== PAGINATION FOOTER ===== */}
       <div className="deliveries-pagination-footer">
         <p className="pagination-info">
-          {t('showingDeliveries') || `Showing ${deliveries.length} deliveries in total`}
+          {t('showingDeliveries') || `Showing ${deliveries.length} ${deliveries.length === 1 ? 'delivery' : 'deliveries'} in total`}
         </p>
         <div className="pagination-controls">
           <button type="button" className="dashboard-btn-outline btn-sm" disabled>Previous</button>

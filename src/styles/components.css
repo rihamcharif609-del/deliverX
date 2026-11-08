@@ -777,6 +777,31 @@ table tr:hover {
   color: #8b5cf6;
 }
 
+.notification-icon-wrapper.announcement {
+  background-color: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+}
+
+.notification-icon-wrapper.announcement_info {
+  background-color: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+}
+
+.notification-icon-wrapper.announcement_warning {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.notification-icon-wrapper.announcement_important {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.notification-icon-wrapper.announcement_maintenance {
+  background-color: rgba(139, 92, 246, 0.12);
+  color: #8b5cf6;
+}
+
 .notification-item-content {
   flex: 1;
   padding-right: 15px; /* Leave space for unread dot/delete button */

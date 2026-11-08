@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Api\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Api\AnnouncementController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CourierProfileController;
 use App\Http\Controllers\Api\Courier\DashboardController as CourierDashboardController;
@@ -36,10 +38,20 @@ Route::prefix('v1')->group(function () {
         Route::patch('/notifications/read-all', [NotificationController::class, 'markAllRead']);
         Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markRead']);
         Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy']);
+
+        Route::get('/announcements', [AnnouncementController::class, 'index']);
+        Route::post('/announcements/{announcement}/read', [AnnouncementController::class, 'markRead']);
+        Route::post('/announcements/read-all', [AnnouncementController::class, 'markAllRead']);
     });
 
     Route::middleware(['auth:sanctum', 'role:admin', 'not.suspended'])->prefix('admin')->group(function () {
         Route::get('/dashboard', AdminDashboardController::class);
+        Route::get('/announcements', [AdminAnnouncementController::class, 'index']);
+        Route::post('/announcements', [AdminAnnouncementController::class, 'store']);
+        Route::get('/announcements/{announcement}', [AdminAnnouncementController::class, 'show']);
+        Route::match(['put', 'patch'], '/announcements/{announcement}', [AdminAnnouncementController::class, 'update']);
+        Route::post('/announcements/{announcement}/publish', [AdminAnnouncementController::class, 'publish']);
+        Route::delete('/announcements/{announcement}', [AdminAnnouncementController::class, 'destroy']);
         Route::get('/users', [AdminUserController::class, 'index']);
         Route::get('/users/{user}', [AdminUserController::class, 'show']);
         Route::post('/users/{user}/suspend', [AdminUserController::class, 'suspend']);
